@@ -1,0 +1,1435 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Sportsbar</title>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #000;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+      color: #fff;
+    }
+
+    /* ---------- LOGIN SCREEN ---------- */
+    #login-screen {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at top, #1c2333 0%, #05060a 55%, #000 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+      transition: opacity 0.3s ease;
+    }
+
+    #login-screen.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .login-card {
+      background: rgba(10, 12, 20, 0.95);
+      border-radius: 16px;
+      padding: 32px 28px 26px;
+      width: 320px;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.8);
+      border: 1px solid rgba(120, 180, 255, 0.25);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .login-logo {
+      font-size: 24px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.28em;
+      text-align: center;
+      margin-bottom: 10px;
+      background: linear-gradient(120deg, #00ffd1, #10b4ff, #ff2f6e);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-shadow: 0 0 14px rgba(0, 255, 209, 0.35);
+    }
+
+    .login-subtitle {
+      font-size: 13px;
+      text-align: center;
+      color: #c5ccdd;
+      margin-bottom: 4px;
+    }
+
+    .login-card label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #9ea5bc;
+      margin-bottom: 4px;
+    }
+
+    .login-input {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid #333b4f;
+      background: #050711;
+      color: #fff;
+      font-size: 13px;
+      box-sizing: border-box;
+      outline: none;
+    }
+
+    .login-input:focus {
+      border-color: #2aa7ff;
+      box-shadow: 0 0 0 1px rgba(42, 167, 255, 0.45);
+    }
+
+    .login-remember-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .login-remember-row input[type="checkbox"] {
+      width: 14px;
+      height: 14px;
+      cursor: pointer;
+    }
+
+    .login-remember-row label.login-remember-label {
+      font-size: 11px;
+      text-transform: none;
+      letter-spacing: 0.02em;
+      color: #c5ccdd;
+      cursor: pointer;
+    }
+
+    .login-button {
+      margin-top: 8px;
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: none;
+      background: linear-gradient(135deg, #00ffd1, #10b4ff);
+      color: #050711;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+
+    .login-button:hover {
+      filter: brightness(1.06);
+    }
+
+    #login-error {
+      display: none;
+      margin-top: 6px;
+      font-size: 11px;
+      color: #ff4f6a;
+      text-align: center;
+    }
+
+    /* ---------- APP LAYOUT ---------- */
+    #container {
+      display: none; /* revealed after successful login */
+      width: 100vw;
+      height: 100vh;
+    }
+
+    #container {
+      display: flex;
+      overflow: hidden;
+    }
+
+    #sidebar {
+      width: 260px;
+      background: #111;
+      padding: 10px;
+      box-sizing: border-box;
+      overflow-y: auto;
+      transition: width 0.25s ease, padding 0.25s ease, opacity 0.25s ease;
+      z-index: 10;
+    }
+    #sidebar.hidden {
+      width: 0 !important;
+      padding: 0 !important;
+      opacity: 0;
+    }
+
+    /* Top-right controls with fade / auto-hide */
+    #top-controls {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 20;
+      display: flex;
+      gap: 8px;
+      opacity: 1;
+      transition: opacity 0.3s ease;
+    }
+    #top-controls.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    #top-controls button {
+      padding: 6px 10px;
+      background: #1e88e5;
+      border: none;
+      border-radius: 999px;
+      color: #fff;
+      cursor: pointer;
+      font-size: 11px;
+      white-space: nowrap;
+    }
+
+    #screen {
+      flex: 1;
+      position: relative;
+      background: #000;
+      overflow: hidden;
+    }
+
+    .panel {
+      position: absolute;
+      overflow: hidden;
+      background: #000;
+      border: 1px solid #222;
+      box-sizing: border-box;
+    }
+
+    /* IMPORTANT: fill panels fully again */
+    .panel video {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover; /* fill panels like original 4-stream */
+      background: #000;
+    }
+
+    .panel.drag-over {
+      outline: 3px dashed #1e88e5;
+    }
+    .panel-label {
+      position: absolute;
+      bottom: 4px;
+      left: 6px;
+      font-size: 11px;
+      background: rgba(0,0,0,0.6);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    /* Green highlight for active panel */
+    .panel-active {
+      border-color: rgba(0, 255, 184, 0.9);
+      box-shadow: 0 0 20px rgba(0, 255, 184, 0.5);
+      transform: translateY(-1px);
+    }
+
+    .panelButton {
+      width: 100%;
+      padding: 6px;
+      margin-bottom: 6px;
+      background: #333;
+      border: none;
+      border-radius: 6px;
+      color: #fff;
+      cursor: pointer;
+      font-size: 12px;
+      text-align: left;
+    }
+    .panelSelected {
+      background: #1e88e5 !important;
+      border: 2px solid #4dabf7;
+    }
+
+    .group {
+      margin-bottom: 8px;
+      border-radius: 6px;
+      background: #181818;
+      overflow: hidden;
+      border: 1px solid #333;
+    }
+    .group-header {
+      padding: 6px 8px;
+      font-size: 12px;
+      font-weight: bold;
+      background: #222;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      user-select: none;
+    }
+    .group-header span.chevron {
+      font-size: 11px;
+      opacity: 0.8;
+    }
+    .group-channels {
+      display: none;
+      padding: 6px;
+    }
+
+    .channel-card {
+      width: 100%;
+      margin-bottom: 6px;
+      padding: 6px 8px;
+      background: #202434;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      color: #fff;
+      cursor: pointer;
+      font-size: 12px;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.15s ease, border 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+    }
+
+    .channel-card:hover {
+      background: #2b3246;
+      border-color: rgba(0, 255, 184, 0.6);
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.5);
+      transform: translateY(-1px);
+    }
+
+    .channel-logo {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      object-fit: contain;
+      background: #000;
+      flex-shrink: 0;
+    }
+
+    .channel-meta {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .channel-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: #ffffff;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+    }
+
+    .channel-tag {
+      font-size: 10px;
+      text-transform: none;
+      letter-spacing: 0.02em;
+      opacity: 0.9;
+      color: #c5ccdd;
+    }
+
+    .channel-live-badge {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 3px 6px;
+      border-radius: 999px;
+      background: radial-gradient(circle, #ff2965 0%, #ff9100 100%);
+      color: #ffffff;
+      flex-shrink: 0;
+    }
+
+    body.cast-mode #sidebar {
+      display: none !important;
+    }
+    body.cast-mode #container {
+      width: 100vw;
+      height: 100vh;
+    }
+    body.cast-mode #screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1;
+      background: #000;
+    }
+    body.cast-mode .panel {
+      display: none !important;
+    }
+    body.cast-mode .panel.cast-active {
+      display: block !important;
+      left: 0 !important;
+      top: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      border: none !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+    }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN OVERLAY -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">SPORTSBAR</div>
+    <div class="login-subtitle">Admin Control Panel</div>
+
+    <div>
+      <label for="login-username">Username</label>
+      <input id="login-username" class="login-input" type="text" autocomplete="username" />
+    </div>
+
+    <div>
+      <label for="login-password">Password</label>
+      <input id="login-password" class="login-input" type="password" autocomplete="current-password" />
+    </div>
+
+    <div class="login-remember-row">
+      <input type="checkbox" id="login-remember" />
+      <label for="login-remember" class="login-remember-label">Stay logged in on this device</label>
+    </div>
+
+    <button id="login-button" class="login-button">Enter</button>
+    <div id="login-error">Incorrect username or password.</div>
+  </div>
+</div>
+
+<!-- APP UI (hidden until login succeeds) -->
+<div id="container">
+  <div id="sidebar">
+    <h3 style="margin:4px 0 6px 0;font-size:14px;">Layout</h3>
+    <button class="panelButton layoutButton" data-layout="2">2 Streams</button>
+    <button class="panelButton layoutButton panelSelected" data-layout="4">4 Streams</button>
+    <button class="panelButton layoutButton" data-layout="6">6 Streams</button>
+
+    <h3 style="margin:12px 0 8px 0;font-size:14px;">Select Panel</h3>
+    <button class="panelButton panelSelectButton" data-video="video1">Panel 1</button>
+    <button class="panelButton panelSelectButton" data-video="video2">Panel 2</button>
+    <button class="panelButton panelSelectButton" data-video="video3">Panel 3</button>
+    <button class="panelButton panelSelectButton" data-video="video4">Panel 4</button>
+    <button class="panelButton panelSelectButton" data-video="video5">Panel 5</button>
+    <button class="panelButton panelSelectButton" data-video="video6">Panel 6</button>
+
+    <h3 style="margin:12px 0 6px 0;font-size:14px;">Channels</h3>
+    <button id="btnCustomUrl" class="panelButton">+ Custom URL</button>
+    <div id="channelGroups"></div>
+  </div>
+
+  <div id="screen">
+    <div id="top-controls">
+      <button id="toggleSidebar">Hide Channels</button>
+      <button id="togglePageFs">Fullscreen Page</button>
+      <button id="toggleCastMode">Full Screen Panel</button>
+    </div>
+
+    <!-- Panels 1–6 -->
+    <div class="panel panel-active" id="panel1" draggable="true" data-video="video1">
+      <video id="video1" class="stream-player" autoplay muted playsinline></video>
+      <div class="panel-label" id="label_video1">Panel 1</div>
+    </div>
+
+    <div class="panel" id="panel2" draggable="true" data-video="video2">
+      <video id="video2" class="stream-player" autoplay muted playsinline></video>
+      <div class="panel-label" id="label_video2">Panel 2</div>
+    </div>
+
+    <div class="panel" id="panel3" draggable="true" data-video="video3">
+      <video id="video3" class="stream-player" autoplay muted playsinline></video>
+      <div class="panel-label" id="label_video3">Panel 3</div>
+    </div>
+
+    <div class="panel" id="panel4" draggable="true" data-video="video4">
+      <video id="video4" class="stream-player" autoplay muted playsinline></video>
+      <div class="panel-label" id="label_video4">Panel 4</div>
+    </div>
+
+    <div class="panel" id="panel5" draggable="true" data-video="video5">
+      <video id="video5" class="stream-player" autoplay muted playsinline></video>
+      <div class="panel-label" id="label_video5">Panel 5</div>
+    </div>
+
+    <div class="panel" id="panel6" draggable="true" data-video="video6">
+      <video id="video6" class="stream-player" autoplay muted playsinline></video>
+      <div class="panel-label" id="label_video6">Panel 6</div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* --------- LOGIN CONFIG --------- */
+const VALID_USERNAME = "SportsbarAdmin";
+const VALID_PASSWORD = "CowboysTrojansMavericks4157";
+const REMEMBER_KEY = "sportsbar_stay_logged_in";
+
+/* --------- CHANNEL DEFINITIONS (logos) --------- */
+
+const CHANNEL_GROUPS = {
+  "US FTA": [
+    {
+      channel: "NBC",
+      logo: "https://img.zuzz.tv/assets/channels/leP0I9zVkdBVQUefXv9iSgvK7vMtNTqlRwNZGST7ED8aHoMcgA.png",
+      links: [
+        "http://fl1.moveonjoy.com/NBC/index.m3u8"
+      ]
+    },
+    {
+      channel: "CBS",
+      logo: "https://img.zuzz.tv/assets/channels/CBS.png",
+      links: [
+        "http://fl1.moveonjoy.com/CBS/index.m3u8"
+      ]
+    },
+    {
+      channel: "ABC",
+      logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/ABC-2021-LOGO.svg/2560px-ABC-2021-LOGO.svg.png",
+      links: [
+        "http://fl1.moveonjoy.com/ABC/index.m3u8"
+      ]
+    },
+    {
+      channel: "TNT",
+      logo: "https://img.zuzz.tv/assets/channels/oJBjZDXoV5MyJ2GduEASuGGvqvyP00o0YsgsSSwhzR4Dl3wndB.png",
+      links: [
+        "http://84.17.40.25/TNT/index.m3u8"
+      ]
+    },
+    {
+      channel: "FOX",
+      logo: "https://img.zuzz.tv/assets/channels/qvaWX6mlwH0ZtIN66wd9qnN5DaLIMw6IeRjGrQaViGNjZIVcsI.png",
+      links: [
+        "https://fl1.moveonjoy.com/FOX/index.m3u8"
+      ]
+    },
+    {
+      channel: "TBS",
+      logo: "https://img.zuzz.tv/assets/channels/8xATOcQY2eBC8e4MoBuYkunNjerUuTIf8kIQck1kxz7nqFAZXC.png",
+      links: [
+        "https://fl31.moveonjoy.com/TBS/index.m3u8"
+      ]
+    },
+    {
+      channel: "USA",
+      logo: "https://img.zuzz.tv/assets/channels/j6IDLeDYF3QFLoNE2vHQEu7SZcvNFt0QnHmApJqckwuHlcOJhx.png",
+      links: [
+        "http://fl31.moveonjoy.com/USA_NETWORK/index.m3u8"
+      ]
+    }
+  ],
+  "Australia": [
+    {
+      channel: "Sky Racing 1",
+      logo: "https://upload.wikimedia.org/wikipedia/en/9/93/Sky_au_racing.png",
+      links: [
+        "https://skylivetab-new.akamaized.net/hls/live/2038780/sky1/index.m3u8"
+      ]
+    },
+    {
+      channel: "Sky Racing 2",
+      logo: "https://upload.wikimedia.org/wikipedia/en/9/93/Sky_au_racing.png",
+      links: [
+        "https://skylivetab-new.akamaized.net/hls/live/2038781/sky2/index.m3u8"
+      ]
+    },
+    {
+      channel: "Nine",
+      logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b0/Nine_Network_logo_%282008%29.svg/2560px-Nine_Network_logo_%282008%29.svg.png",
+      links: [
+        "https://9now-livestreams-fhd-t.akamaized.net/u/prod/simulcast/bne/ch9/hls/r1/index.m3u8"
+      ]
+    },
+    {
+      channel: "Seven",
+      logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Seven_Network_logo.svg/2560px-Seven_Network_logo.svg.png",
+      links: [
+        "https://i.mjh.nz/.r/seven-bri.m3u8"
+      ]
+    },
+    {
+      channel: "Racing.com",
+      logo: "https://static.wikia.nocookie.net/logopedia/images/3/3e/RACING.COM_logo_2016.svg/revision/latest?cb=20181117180142",
+      links: [
+        "https://i.mjh.nz/.r/racing-fast.m3u8"
+      ]
+    }
+  ],
+  "US Sport": [
+    {
+      channel: "ESPN (US)",
+      logo: "https://img.zuzz.tv/assets/channels/0n7d6FQkfkqe7k80zzsD3tZx6vEJuuGahPbzjCGSnk2uSK7SO2.png",
+      links: [
+        "http://41.205.93.154/ESPN/index.m3u8"
+      ]
+    },
+    {
+      channel: "ESPN2 (US)",
+      logo: "https://img.zuzz.tv/assets/channels/DbRwK42zSLyeCsWYxv1SIQcvBsHzhhEsUr8pW1pPmDoKVQtcEt.png",
+      links: [
+        "https://serv10g.zuzzplayer.xyz/hls/espn2/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTEvMjEvMjAyNSAxOjI0OjA0IFBNJmhhc2hfdmFsdWU9YzZrdG91NlBMUXpwaFJFcmJNMHlpZz09JnZhbGlkbWludXRlcz0yODA="
+      ]
+    },
+    {
+      channel: "ESPNU",
+      logo: "https://img.zuzz.tv/assets/channels/ADqzwrsmny6Tyc4l6K5OF9tNeEY0szYUiVaodlzI7H2JC4b6uk.png",
+      links: [
+        "https://fl1.moveonjoy.com/ESPN_U/index.m3u8"
+      ]
+    },
+    {
+      channel: "Big 10",
+      logo: "https://img.zuzz.tv/assets/channels/big10.png",
+      links: [
+        "https://fl7.moveonjoy.com/BIG_TEN_NETWORK/index.m3u8"
+      ]
+    },
+    {
+      channel: "SEC Network",
+      logo: "https://img.zuzz.tv/assets/channels/sec.png",
+      links: [
+        "http://143.244.60.30/SEC_NETWORK/index.m3u8"
+      ]
+    },
+    {
+      channel: "ACC Network",
+      logo: "https://img.zuzz.tv/assets/channels/ACC.png",
+      links: [
+        "https://fl31.moveonjoy.com/ACC_NETWORK/index.m3u8"
+      ]
+    },
+    {
+      channel: "ACC Digital Network",
+      logo: "https://img.zuzz.tv/assets/channels/ACC.png",
+      links: [
+        "https://raycom-accdn-firetv.amagi.tv/playlist.m3u8"
+      ]
+    },
+    {
+      channel: "Fox Sports 1",
+      logo: "https://img.zuzz.tv/assets/channels/GhjV5JvfTd00OYslaebluTQ0ctK8lyOcMd4TZzvpEFlbJnITFn.png",
+      links: [
+        "https://fl1.moveonjoy.com/FOX_Sports_1/index.m3u8"
+      ]
+    },
+    {
+      channel: "Fox Sports 2",
+      logo: "https://img.zuzz.tv/assets/channels/RrZjqqiVySHtSDHJ2nOAovVI6adigv08Nr5kK2Yvkp6mycDiIA.png",
+      links: [
+        "https://tvpass.org/live/FoxSports2/sd"
+      ]
+    },
+    {
+      channel: "CBS Sports Network",
+      logo: "https://img.zuzz.tv/assets/channels/nQHA4H2nbSgMgsyIZxip5X0anhT605Gxq8elGxCsoXkPVzZjJD.png",
+      links: [
+        "https://fl1.moveonjoy.com/CBS_SPORTS_NETWORK/index.m3u8"
+      ]
+    },
+    {
+      channel: "NFL Network",
+      logo: "https://img.zuzz.tv/assets/channels/3DkMPY1wYO7mFGTGispHwPtw5VWwLGQvfhJGodUp4isSONVxwI.png",
+      links: [
+        "https://fl1.moveonjoy.com/NFL_NETWORK/index.m3u8"
+      ]
+    },
+    {
+      channel: "NBA TV",
+      logo: "https://img.zuzz.tv/assets/channels/nQWkxr73TBBJoByDoKwirX90t4efemvAVwYF15PM9Xt7uD8pk2.png",
+      links: [
+        "https://fl1.moveonjoy.com/NBA_TV/index.m3u8"
+      ]
+    },
+    {
+      channel: "NHL Network",
+      logo: "https://img.zuzz.tv/assets/channels/fmmBmmJBXkKtQQPtny0LyE8eS3AIU6yY5mroBTv0Q6SLuriMQy.png",
+      links: [
+        "https://fl1.moveonjoy.com/NHL_NETWORK/index.m3u8"
+      ]
+    },
+    {
+      channel: "MLB Network",
+      logo: "https://img.zuzz.tv/assets/channels/3L0eJOtGsM3dfPE3EKTyrlSOSy3eLt5gkxDWBfITnL2JXcK8D6.png",
+      links: [
+        "https://fl1.moveonjoy.com/MLB_NETWORK/index.m3u8"
+      ]
+    },
+    {
+      channel: "SNY",
+      logo: "https://upload.wikimedia.org/wikipedia/commons/1/1c/SNY_logo.svg",
+      links: [
+        "https://fl7.moveonjoy.com/SNY/index.m3u8"
+      ]
+    },
+    {
+      channel: "MSG HD",
+      logo: "https://img.zuzz.tv/assets/channels/uTIfEcLMqxJjXaVZaGqCLBWaJCN6ML7saYVypSeCMAoVqNoNUe.png",
+      links: [
+        "http://fl2.moveonjoy.com/MSG/index.m3u8"
+      ]
+    },
+    {
+      channel: "YES Network",
+      logo: "https://img.zuzz.tv/assets/channels/IWeXhdnKlWTNNugPeZLYDuEAhB60dTmvTcVOKk0RJoupzRYyWA.png",
+      links: [
+        "https://fl31.moveonjoy.com/YES_NETWORK/index.m3u8"
+      ]
+    },
+    {
+      channel: "NBC Sports Boston",
+      logo: "https://img.zuzz.tv/assets/channels/b6MjsvM3qfQY4CZV1LVJWwFt1mVVoj3iX7gmPTH7MiP8rFWFAk.png",
+      links: [
+        "https://serv10g2.zuzzplayer.xyz/hls/nbc-boston/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTEvMTYvMjAyNSA4OjIzOjMzIEFNJmhhc2hfdmFsdWU9ZEV1bHdvMExyWXhRUFM5NVN6RHdqdz09JnZhbGlkbWludXRlcz0yODA=",
+        "https://serv10g2.zuzzplayer.xyz/hls/nbc-boston/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTEvMTUvMjAyNSAxMjozODowMyBBTSZoYXNoX3ZhbHVlPUNDaW9GbWVBQUp0b3EzNTlkOFdVa3c9PSZ2YWxpZG1pbnV0ZXM9Mjgw"
+      ]
+    },
+    {
+      channel: "NESN",
+      logo: "https://img.zuzz.tv/assets/channels/pNcr1AgqdNw9MAjXJeWzOgxwUx3XJ7CdLZs2BGThVwk3LR4C4a.png",
+      links: [
+        "https://serv10g2.zuzzplayer.xyz/hls/nesn12/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTEvMTYvMjAyNSA4OjIzOjMzIEFNJmhhc2hfdmFsdWU9ZEV1bHdvMExyWXhRUFM5NVN6RHdqdz09JnZhbGlkbWludXRlcz0yODA=",
+        "https://serv10g2.zuzzplayer.xyz/hls/nesn12/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTEvMTUvMjAyNSAxMjozODowMyBBTSZoYXNoX3ZhbHVlPUNDaW9GbWVBQUp0b3EzNTlkOFdVa3c9PSZ2YWxpZG1pbnV0ZXM9Mjgw"
+      ]
+    },
+    {
+      channel: "Fanduel Sports Network",
+      logo: "https://press.fanduel.com/_next/image?url=https%3A%2F%2Fcdn.sanity.io%2Fimages%2Fpbwem9y5%2Ffanduel_common_production%2F08bd6bfd645437fd56a3edbdac4657c23312af6a-4882x4868.png&w=640&q=100",
+      links: [
+        "https://fl31.moveonjoy.com/PAC_12/index.m3u8"
+      ]
+    }
+  ],
+  "Canada": [
+    {
+      channel: "TSN1",
+      logo: "https://img.zuzz.tv/assets/channels/tQS7GnEAURnhchSfRoICM80sNF3w6cz1Oy1kERQINgnbPF5a6o.png",
+      links: [
+        "https://fl1.moveonjoy.com/TSN_1/index.m3u8"
+      ]
+    },
+    {
+      channel: "Sportsnet",
+      logo: "https://img.zuzz.tv/assets/channels/3uG0nL2Wp3ey1ixpKnTZppIZPoukSILXBB0WX9HyuACmyK9Z3A.png",
+      links: [
+        "https://serv10g2.zuzzplayer.xyz/hls/snontario/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTEvMTYvMjAyNSA4OjIzOjMzIEFNJmhhc2hfdmFsdWU9ZEV1bHdvMExyWXhRUFM5NVN6RHdqdz09JnZhbGlkbWludXRlcz0yODA=",
+        "https://a1xs.vip/6000011"
+      ]
+    }
+  ],
+  "NBA League Pass": [
+    {
+      channel: "League Pass 1",
+      logo: "https://img.zuzz.tv/assets/channels/nQWkxr73TBBJoByDoKwirX90t4efemvAVwYF15PM9Xt7uD8pk2.png",
+      links: [
+        "https://serv10g.zuzzplayer.xyz/hls/nba1/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTEvMTMvMjAyNSAxMjo0MDozOSBQTSZoYXNoX3ZhbHVlPUtBeFVkR0llQ2lyeHhvVnlRZmRzS3c9PSZ2YWxpZG1pbnV0ZXM9Mjgw",
+        "https://serv10g2.zuzzplayer.xyz/hls/nba1/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTEvMTYvMjAyNSA4OjIzOjMzIEFNJmhhc2hfdmFsdWU9ZEV1bHdvMExyWXhRUFM5NVN6RHdqdz09JnZhbGlkbWludXRlcz0yODA="
+      ]
+    },
+    {
+      channel: "League Pass 2",
+      logo: "https://img.zuzz.tv/assets/channels/nQWkxr73TBBJoByDoKwirX90t4efemvAVwYF15PM9Xt7uD8pk2.png",
+      links: [
+        "https://serv10g.zuzzplayer.xyz/hls/nba2/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTEvMTMvMjAyNSAxMjo0MDozOSBQTSZoYXNoX3ZhbHVlPUtBeFVkR0llQ2lyeHhvVnlRZmRzS3c9PSZ2YWxpZG1pbnV0ZXM9Mjgw",
+        "https://serv10g2.zuzzplayer.xyz/hls/nba2/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTEvMTYvMjAyNSA4OjIzOjMzIEFNJmhhc2hfdmFsdWU9ZEV1bHdvMExyWXhRUFM5NVN6RHdqdz09JnZhbGlkbWludXRlcz0yODA="
+      ]
+    },
+    {
+      channel: "League Pass 3",
+      logo: "https://img.zuzz.tv/assets/channels/nQWkxr73TBBJoByDoKwirX90t4efemvAVwYF15PM9Xt7uD8pk2.png",
+      links: [
+        "https://serv10g.zuzzplayer.xyz/hls/nba3/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTEvMTMvMjAyNSAxMjo0MDozOSBQTSZoYXNoX3ZhbHVlPUtBeFVkR0llQ2lyeHhvVnlRZmRzS3c9PSZ2YWxpZG1pbnV0ZXM9Mjgw",
+        "https://serv10g2.zuzzplayer.xyz/hls/nba3/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTEvMTYvMjAyNSA4OjIzOjMzIEFNJmhhc2hfdmFsdWU9ZEV1bHdvMExyWXhRUFM5NVN6RHdqdz09JnZhbGlkbWludXRlcz0yODA="
+      ]
+    },
+    {
+      channel: "League Pass 4",
+      logo: "https://img.zuzz.tv/assets/channels/nQWkxr73TBBJoByDoKwirX90t4efemvAVwYF15PM9Xt7uD8pk2.png",
+      links: [
+        "https://serv10g.zuzzplayer.xyz/hls/nba4/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTEvMTMvMjAyNSAxMjo0MDozOSBQTSZoYXNoX3ZhbHVlPUtBeFVkR0llQ2lyeHhvVnlRZmRzS3c9PSZ2YWxpZG1pbnV0ZXM9Mjgw",
+        "https://serv10g2.zuzzplayer.xyz/hls/nba4/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTEvMTYvMjAyNSA4OjIzOjMzIEFNJmhhc2hfdmFsdWU9ZEV1bHdvMExyWXhRUFM5NVN6RHdqdz09JnZhbGlkbWludXRlcz0yODA="
+      ]
+    },
+    {
+      channel: "League Pass 5",
+      logo: "https://img.zuzz.tv/assets/channels/nQWkxr73TBBJoByDoKwirX90t4efemvAVwYF15PM9Xt7uD8pk2.png",
+      links: [
+        "https://serv10g.zuzzplayer.xyz/hls/nba5/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTEvMTMvMjAyNSAxMjo0MDozOSBQTSZoYXNoX3ZhbHVlPUtBeFVkR0llQ2lyeHhvVnlRZmRzS3c9PSZ2YWxpZG1pbnV0ZXM9Mjgw",
+        "https://serv10g2.zuzzplayer.xyz/hls/nba5/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTEvMTYvMjAyNSA4OjIzOjMzIEFNJmhhc2hfdmFsdWU9ZEV1bHdvMExyWXhRUFM5NVN6RHdqdz09JnZhbGlkbWludXRlcz0yODA="
+      ]
+    },
+    {
+      channel: "League Pass 6",
+      logo: "https://img.zuzz.tv/assets/channels/nQWkxr73TBBJoByDoKwirX90t4efemvAVwYF15PM9Xt7uD8pk2.png",
+      links: [
+        "https://serv10g.zuzzplayer.xyz/hls/nba6/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTEvMTMvMjAyNSAxMjo0MDozOSBQTSZoYXNoX3ZhbHVlPUtBeFVkR0llQ2lyeHhvVnlRZmRzS3c9PSZ2YWxpZG1pbnV0ZXM9Mjgw",
+        "https://serv10g2.zuzzplayer.xyz/hls/nba6/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTEvMTYvMjAyNSA4OjIzOjMzIEFNJmhhc2hfdmFsdWU9ZEV1bHdvMExyWXhRUFM5NVN6RHdqdz09JnZhbGlkbWludXRlcz0yODA="
+      ]
+    }
+  ]
+};
+
+/* --------- STATE --------- */
+const VIDEO_IDS = ["video1","video2","video3","video4","video5","video6"];
+
+let selectedVideoId = "video1";
+let audioSourceVideoId = "video1";
+let layoutMode = 4; // 2, 4, or 6
+
+const hlsInstances = {
+  video1: null,
+  video2: null,
+  video3: null,
+  video4: null,
+  video5: null,
+  video6: null
+};
+const linksByVideoId = {
+  video1: [],
+  video2: [],
+  video3: [],
+  video4: [],
+  video5: [],
+  video6: []
+};
+const currentLinkIndex = {
+  video1: 0,
+  video2: 0,
+  video3: 0,
+  video4: 0,
+  video5: 0,
+  video6: 0
+};
+
+let fullscreenMode = null; // null | "page" | "panel"
+let castMode = false;
+
+/* Top-controls auto-hide */
+let controlsHideTimeout = null;
+
+function hideTopControls() {
+  const controls = document.getElementById("top-controls");
+  if (!controls) return;
+  controls.classList.add("hidden");
+}
+
+function showTopControls() {
+  const controls = document.getElementById("top-controls");
+  if (!controls) return;
+  controls.classList.remove("hidden");
+  if (controlsHideTimeout) {
+    clearTimeout(controlsHideTimeout);
+  }
+  controlsHideTimeout = setTimeout(() => {
+    hideTopControls();
+  }, 3000);
+}
+
+/* ---------- LOGIN LOGIC ---------- */
+function initLogin() {
+  const loginScreen = document.getElementById("login-screen");
+  const appContainer = document.getElementById("container");
+  const userInput = document.getElementById("login-username");
+  const passInput = document.getElementById("login-password");
+  const rememberInput = document.getElementById("login-remember");
+  const btn = document.getElementById("login-button");
+  const error = document.getElementById("login-error");
+
+  const remembered = localStorage.getItem(REMEMBER_KEY) === "1";
+  if (remembered) {
+    loginScreen.style.display = "none";
+    appContainer.style.display = "flex";
+    layoutPanels();
+    return;
+  }
+
+  function doLogin() {
+    const u = userInput.value.trim();
+    const p = passInput.value;
+    if (u === VALID_USERNAME && p === VALID_PASSWORD) {
+      error.style.display = "none";
+
+      if (rememberInput && rememberInput.checked) {
+        localStorage.setItem(REMEMBER_KEY, "1");
+      } else {
+        localStorage.removeItem(REMEMBER_KEY);
+      }
+
+      loginScreen.classList.add("hidden");
+      setTimeout(() => {
+        loginScreen.style.display = "none";
+      }, 300);
+      appContainer.style.display = "flex";
+      layoutPanels();
+    } else {
+      error.style.display = "block";
+    }
+  }
+
+  btn.addEventListener("click", doLogin);
+  passInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") doLogin();
+  });
+  userInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") doLogin();
+  });
+}
+
+/* ---------- APP LOGIC ---------- */
+
+function updateCastModeUI() {
+  const body = document.body;
+  if (castMode) {
+    body.classList.add("cast-mode");
+    const activePanel = document.querySelector('.panel[data-video="' + selectedVideoId + '"]');
+    document.querySelectorAll(".panel").forEach(p => {
+      p.classList.remove("cast-active");
+      p.classList.remove("panel-active"); // no green highlight in cast mode
+    });
+    if (activePanel) activePanel.classList.add("cast-active");
+  } else {
+    body.classList.remove("cast-mode");
+    document.querySelectorAll(".panel").forEach(p => p.classList.remove("cast-active"));
+    updatePanelSelectionUI(); // restore highlight
+    layoutPanels();
+  }
+}
+
+function updatePanelSelectionUI() {
+  document.querySelectorAll(".panel").forEach(panel => {
+    if (panel.dataset.video === selectedVideoId && !castMode && fullscreenMode !== "panel") {
+      panel.classList.add("panel-active");
+    } else {
+      panel.classList.remove("panel-active");
+    }
+  });
+
+  document.querySelectorAll(".panelSelectButton").forEach(btn => {
+    if (btn.getAttribute("data-video") === selectedVideoId) {
+      btn.classList.add("panelSelected");
+    } else {
+      btn.classList.remove("panelSelected");
+    }
+  });
+}
+
+function clearPanelHighlight() {
+  document.querySelectorAll(".panel").forEach(p => p.classList.remove("panel-active"));
+}
+
+function setPanel(videoId) {
+  selectedVideoId = videoId;
+  audioSourceVideoId = videoId;
+  updateAudioState();
+  updatePanelSelectionUI();
+  updateCastModeUI();
+}
+
+function updateAudioState() {
+  VIDEO_IDS.forEach(id => {
+    const v = document.getElementById(id);
+    if (v) v.muted = (id !== audioSourceVideoId);
+  });
+}
+
+function destroyHls(videoId) {
+  if (hlsInstances[videoId]) {
+    try { hlsInstances[videoId].destroy(); } catch (e) {}
+    hlsInstances[videoId] = null;
+  }
+}
+
+function handleStreamError(videoId) {
+  const links = linksByVideoId[videoId] || [];
+  let idx = currentLinkIndex[videoId] || 0;
+  if (idx >= links.length - 1) {
+    console.warn("All sources failed for", videoId);
+    return;
+  }
+  currentLinkIndex[videoId] = idx + 1;
+  console.log("Falling back to link index", currentLinkIndex[videoId], "for", videoId);
+  actuallyLoadCurrent(videoId);
+}
+
+function actuallyLoadCurrent(videoId) {
+  const video = document.getElementById(videoId);
+  if (!video) return;
+  const links = linksByVideoId[videoId] || [];
+  const idx = currentLinkIndex[videoId] || 0;
+  if (!links.length || idx >= links.length) return;
+  const url = links[idx];
+
+  destroyHls(videoId);
+  video.removeAttribute("src");
+  video.load();
+
+  if (window.Hls && Hls.isSupported() && url.includes(".m3u8")) {
+    const hls = new Hls();
+    hls.loadSource(url);
+    hls.attachMedia(video);
+    hls.on(Hls.Events.ERROR, (event, data) => {
+      if (data && data.fatal) {
+        handleStreamError(videoId);
+      }
+    });
+    hlsInstances[videoId] = hls;
+  } else {
+    video.src = url;
+  }
+
+  video.onerror = () => {
+    handleStreamError(videoId);
+  };
+
+  updateAudioState();
+}
+
+function loadChannelIntoSelected(groupName, channelObj) {
+  const videoId = selectedVideoId;
+  linksByVideoId[videoId] = channelObj.links.slice();
+  currentLinkIndex[videoId] = 0;
+
+  const video = document.getElementById(videoId);
+  if (video) {
+    video.dataset.channelName = channelObj.channel;
+  }
+
+  const label = document.getElementById("label_" + videoId);
+  if (label) {
+    label.textContent = channelObj.channel;
+  }
+
+  actuallyLoadCurrent(videoId);
+}
+
+/* ----- LAYOUT MODES: 2 / 4 / 6 ----- */
+
+function setLayoutMode(mode) {
+  layoutMode = mode;
+  document.querySelectorAll(".layoutButton").forEach(btn => {
+    if (parseInt(btn.getAttribute("data-layout"), 10) === mode) {
+      btn.classList.add("panelSelected");
+    } else {
+      btn.classList.remove("panelSelected");
+    }
+  });
+  layoutPanels();
+}
+
+function layoutPanels() {
+  const screen = document.getElementById("screen");
+  const rect = screen.getBoundingClientRect();
+  const w = rect.width || window.innerWidth;
+  const h = rect.height || window.innerHeight;
+
+  const p1 = document.getElementById("panel1");
+  const p2 = document.getElementById("panel2");
+  const p3 = document.getElementById("panel3");
+  const p4 = document.getElementById("panel4");
+  const p5 = document.getElementById("panel5");
+  const p6 = document.getElementById("panel6");
+
+  const allPanels = [p1,p2,p3,p4,p5,p6];
+  allPanels.forEach(p => { if (p) p.style.display = "none"; });
+
+  if (layoutMode === 2) {
+    // Two streams side by side, letterboxed vertically (60% height), centred
+    const targetH = Math.floor(h * 0.6);
+    const topOffset = Math.floor((h - targetH) / 2);
+    const halfW = Math.floor(w / 2);
+
+    p1.style.display = "block";
+    p2.style.display = "block";
+
+    p1.style.left = "0px";
+    p1.style.top = topOffset + "px";
+    p1.style.width = halfW + "px";
+    p1.style.height = targetH + "px";
+
+    p2.style.left = halfW + "px";
+    p2.style.top = topOffset + "px";
+    p2.style.width = (w - halfW) + "px";
+    p2.style.height = targetH + "px";
+
+  } else if (layoutMode === 4) {
+    // Classic 2x2 grid
+    p1.style.display = "block";
+    p2.style.display = "block";
+    p3.style.display = "block";
+    p4.style.display = "block";
+
+    const midX = Math.floor(w / 2);
+    const midY = Math.floor(h / 2);
+
+    p1.style.left = "0px";
+    p1.style.top = "0px";
+    p1.style.width = midX + "px";
+    p1.style.height = midY + "px";
+
+    p2.style.left = midX + "px";
+    p2.style.top = "0px";
+    p2.style.width = (w - midX) + "px";
+    p2.style.height = midY + "px";
+
+    p3.style.left = "0px";
+    p3.style.top = midY + "px";
+    p3.style.width = midX + "px";
+    p3.style.height = (h - midY) + "px";
+
+    p4.style.left = midX + "px";
+    p4.style.top = midY + "px";
+    p4.style.width = (w - midX) + "px";
+    p4.style.height = (h - midY) + "px";
+
+  } else if (layoutMode === 6) {
+    // 3x2 grid (3 columns, 2 rows)
+    p1.style.display = "block";
+    p2.style.display = "block";
+    p3.style.display = "block";
+    p4.style.display = "block";
+    p5.style.display = "block";
+    p6.style.display = "block";
+
+    const colW = Math.floor(w / 3);
+    const rowH = Math.floor(h / 2);
+
+    // Top row
+    p1.style.left = "0px";
+    p1.style.top = "0px";
+    p1.style.width = colW + "px";
+    p1.style.height = rowH + "px";
+
+    p2.style.left = colW + "px";
+    p2.style.top = "0px";
+    p2.style.width = colW + "px";
+    p2.style.height = rowH + "px";
+
+    p3.style.left = (colW * 2) + "px";
+    p3.style.top = "0px";
+    p3.style.width = (w - colW * 2) + "px";
+    p3.style.height = rowH + "px";
+
+    // Bottom row
+    p4.style.left = "0px";
+    p4.style.top = rowH + "px";
+    p4.style.width = colW + "px";
+    p4.style.height = (h - rowH) + "px";
+
+    p5.style.left = colW + "px";
+    p5.style.top = rowH + "px";
+    p5.style.width = colW + "px";
+    p5.style.height = (h - rowH) + "px";
+
+    p6.style.left = (colW * 2) + "px";
+    p6.style.top = rowH + "px";
+    p6.style.width = (w - colW * 2) + "px";
+    p6.style.height = (h - rowH) + "px";
+  }
+}
+
+function buildGroupsUI() {
+  const container = document.getElementById("channelGroups");
+  container.innerHTML = "";
+  for (const groupName in CHANNEL_GROUPS) {
+    if (!Object.prototype.hasOwnProperty.call(CHANNEL_GROUPS, groupName)) continue;
+    const groupDiv = document.createElement("div");
+    groupDiv.className = "group";
+
+    const header = document.createElement("div");
+    header.className = "group-header";
+    const titleSpan = document.createElement("span");
+    titleSpan.textContent = groupName;
+    const chev = document.createElement("span");
+    chev.className = "chevron";
+    chev.textContent = "▶";
+    header.appendChild(titleSpan);
+    header.appendChild(chev);
+
+    const channelsDiv = document.createElement("div");
+    channelsDiv.className = "group-channels";
+
+    const channels = CHANNEL_GROUPS[groupName];
+    channels.forEach(ch => {
+      const btn = document.createElement("button");
+      btn.className = "channel-card";
+
+      if (ch.logo) {
+        const logo = document.createElement("img");
+        logo.className = "channel-logo";
+        logo.src = ch.logo;
+        logo.alt = ch.channel;
+        btn.appendChild(logo);
+      }
+
+      const meta = document.createElement("div");
+      meta.className = "channel-meta";
+
+      const nameSpan = document.createElement("span");
+      nameSpan.className = "channel-name";
+      nameSpan.textContent = ch.channel;
+      meta.appendChild(nameSpan);
+
+      const tagSpan = document.createElement("span");
+      tagSpan.className = "channel-tag";
+      tagSpan.textContent = groupName;
+      meta.appendChild(tagSpan);
+
+      btn.appendChild(meta);
+
+      const live = document.createElement("span");
+      live.className = "channel-live-badge";
+      live.textContent = "Live";
+      btn.appendChild(live);
+
+      btn.onclick = () => loadChannelIntoSelected(groupName, ch);
+      channelsDiv.appendChild(btn);
+    });
+
+    header.onclick = () => {
+      const isVisible = channelsDiv.style.display === "block";
+      channelsDiv.style.display = isVisible ? "none" : "block";
+      chev.textContent = isVisible ? "▶" : "▼";
+    };
+
+    groupDiv.appendChild(header);
+    groupDiv.appendChild(channelsDiv);
+    container.appendChild(groupDiv);
+  }
+}
+
+function handleCustomUrl() {
+  const url = prompt("Enter stream URL (.m3u8 or other):");
+  if (!url) return;
+  const clean = url.trim();
+  if (!clean) return;
+  const videoId = selectedVideoId;
+  linksByVideoId[videoId] = [clean];
+  currentLinkIndex[videoId] = 0;
+
+  const video = document.getElementById(videoId);
+  if (video) {
+    video.dataset.channelName = "Custom";
+  }
+  const label = document.getElementById("label_" + videoId);
+  if (label) {
+    label.textContent = "Custom";
+  }
+  actuallyLoadCurrent(videoId);
+}
+
+function enterPageFullscreen() {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().then(() => {
+      fullscreenMode = "page";
+    }).catch(e => {
+      console.warn("Page fullscreen failed:", e);
+      fullscreenMode = null;
+    });
+  }
+}
+
+function exitFullscreen() {
+  if (document.fullscreenElement) {
+    document.exitFullscreen().catch(() => {});
+  }
+}
+
+function fullscreenPanel(panelId) {
+  const panel = document.getElementById(panelId);
+  if (!panel) return;
+  fullscreenMode = "panel";
+
+  clearPanelHighlight();
+
+  const controls = document.getElementById("top-controls");
+  if (controls) controls.style.display = "none";
+
+  panel.requestFullscreen().catch(e => {
+    console.warn("Panel fullscreen failed:", e);
+    if (controls) controls.style.display = "flex";
+    fullscreenMode = null;
+    updatePanelSelectionUI();
+  });
+}
+
+document.addEventListener("fullscreenchange", () => {
+  const controls = document.getElementById("top-controls");
+  if (!document.fullscreenElement) {
+    if (fullscreenMode === "panel") {
+      if (controls) controls.style.display = "flex";
+      layoutPanels();
+      fullscreenMode = "page";
+      enterPageFullscreen();
+    } else if (fullscreenMode === "page") {
+      fullscreenMode = null;
+      if (!castMode) updatePanelSelectionUI();
+    }
+  }
+});
+
+function initDragAndDrop() {
+  let draggedPanelId = null;
+
+  const panels = document.querySelectorAll(".panel");
+  panels.forEach(panel => {
+    panel.addEventListener("dragstart", e => {
+      draggedPanelId = panel.id;
+      e.dataTransfer.effectAllowed = "move";
+    });
+    panel.addEventListener("dragover", e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      panel.classList.add("drag-over");
+    });
+    panel.addEventListener("dragleave", () => {
+      panel.classList.remove("drag-over");
+    });
+    panel.addEventListener("drop", e => {
+      e.preventDefault();
+      panel.classList.remove("drag-over");
+      if (!draggedPanelId || draggedPanelId === panel.id) return;
+      swapPanels(draggedPanelId, panel.id);
+      draggedPanelId = null;
+    });
+  });
+}
+
+function swapPanels(panelIdA, panelIdB) {
+  const panelA = document.getElementById(panelIdA);
+  const panelB = document.getElementById(panelIdB);
+  if (!panelA || !panelB) return;
+
+  const videoIdA = panelA.dataset.video;
+  const videoIdB = panelB.dataset.video;
+
+  const labelA = document.getElementById("label_" + videoIdA);
+  const labelB = document.getElementById("label_" + videoIdB);
+  const tmpLabel = labelA.textContent;
+  labelA.textContent = labelB.textContent;
+  labelB.textContent = tmpLabel;
+
+  const vidA = document.getElementById(videoIdA);
+  const vidB = document.getElementById(videoIdB);
+  const tmpName = vidA.dataset.channelName;
+  vidA.dataset.channelName = vidB.dataset.channelName;
+  vidB.dataset.channelName = tmpName;
+
+  const tmpLinks = linksByVideoId[videoIdA];
+  linksByVideoId[videoIdA] = linksByVideoId[videoIdB];
+  linksByVideoId[videoIdB] = tmpLinks;
+
+  const tmpIdx = currentLinkIndex[videoIdA];
+  currentLinkIndex[videoIdA] = currentLinkIndex[videoIdB];
+  currentLinkIndex[videoIdB] = tmpIdx;
+
+  if (linksByVideoId[videoIdA] && linksByVideoId[videoIdA].length) {
+    actuallyLoadCurrent(videoIdA);
+  }
+  if (linksByVideoId[videoIdB] && linksByVideoId[videoIdB].length) {
+    actuallyLoadCurrent(videoIdB);
+  }
+}
+
+window.addEventListener("load", () => {
+  initLogin();
+  buildGroupsUI();
+  initDragAndDrop();
+  updateAudioState();
+  updatePanelSelectionUI();
+  showTopControls();
+
+  // initial layout
+  setLayoutMode(4);
+
+  const screenEl = document.getElementById("screen");
+  if (screenEl) {
+    screenEl.addEventListener("mousemove", (e) => {
+      if (e.clientY < 120) {
+        showTopControls();
+      }
+    });
+  }
+
+  const toggleSidebarBtn = document.getElementById("toggleSidebar");
+  if (toggleSidebarBtn) {
+    toggleSidebarBtn.onclick = () => {
+      const sb = document.getElementById("sidebar");
+      sb.classList.toggle("hidden");
+      setTimeout(layoutPanels, 260);
+    };
+  }
+
+  const toggleFsBtn = document.getElementById("togglePageFs");
+  if (toggleFsBtn) {
+    toggleFsBtn.onclick = () => {
+      if (!document.fullscreenElement) {
+        enterPageFullscreen();
+      } else {
+        exitFullscreen();
+      }
+    };
+  }
+
+  const castBtn = document.getElementById("toggleCastMode");
+  if (castBtn) {
+    castBtn.onclick = () => {
+      castMode = !castMode;
+      castBtn.textContent = castMode ? "Exit Full Screen Panel" : "Full Screen Panel";
+      updateCastModeUI();
+    };
+  }
+
+  const customUrlBtn = document.getElementById("btnCustomUrl");
+  if (customUrlBtn) {
+    customUrlBtn.onclick = handleCustomUrl;
+  }
+
+  document.querySelectorAll(".panelSelectButton").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const vid = btn.getAttribute("data-video");
+      setPanel(vid);
+    });
+  });
+
+  document.querySelectorAll(".layoutButton").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const mode = parseInt(btn.getAttribute("data-layout"), 10);
+      setLayoutMode(mode);
+    });
+  });
+
+  document.querySelectorAll(".stream-player").forEach(video => {
+    video.addEventListener("click", () => {
+      setPanel(video.id);
+    });
+    video.addEventListener("dblclick", () => {
+      const panelId = "panel" + video.id.replace("video", "");
+      fullscreenPanel(panelId);
+    });
+  });
+});
+
+window.addEventListener("resize", () => {
+  if (castMode) {
+    updateCastModeUI();
+  } else {
+    setTimeout(layoutPanels, 50);
+  }
+});
+</script>
+
+</body>
+</html>
+
