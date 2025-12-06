@@ -8,6 +8,9 @@
   <link rel="icon" type="image/png" href="sportsbar-icon.png">
 
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <script src="https://unpkg.com/@ungap/custom-elements-builtin"></script>
+  <script type="module" src="https://unpkg.com/x-frame-bypass"></script>
+
   <style>
     html, body {
       margin: 0;
@@ -55,7 +58,6 @@
       text-transform: uppercase;
       letter-spacing: 0.28em;
       text-align: center;
-      margin-bottom: 10px;
       background: linear-gradient(120deg, #00ffd1, #10b4ff, #ff2f6e);
       -webkit-background-clip: text;
       background-clip: text;
@@ -145,12 +147,8 @@
 
     /* ---------- APP LAYOUT ---------- */
     #container {
-      display: none; /* revealed after successful login */
       width: 100vw;
       height: 100vh;
-    }
-
-    #container {
       display: flex;
       overflow: hidden;
     }
@@ -168,6 +166,13 @@
       width: 0 !important;
       padding: 0 !important;
       opacity: 0;
+    }
+
+    #screen {
+      flex: 1;
+      position: relative;
+      background: #000;
+      overflow: hidden;
     }
 
     /* Top-right controls with fade / auto-hide */
@@ -197,13 +202,6 @@
       white-space: nowrap;
     }
 
-    #screen {
-      flex: 1;
-      position: relative;
-      background: #000;
-      overflow: hidden;
-    }
-
     .panel {
       position: absolute;
       overflow: hidden;
@@ -211,18 +209,30 @@
       border: 1px solid #222;
       box-sizing: border-box;
     }
-    .panel video {
+
+    .panel-media {
       position: absolute;
-      top: 0;
-      left: 0;
+      inset: 0;
+    }
+
+    .panel video {
       width: 100%;
       height: 100%;
       object-fit: fill;
       background: #000;
     }
+
+    .panel-iframe {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      background: #000;
+    }
+
     .panel.drag-over {
       outline: 3px dashed #1e88e5;
     }
+
     .panel-label {
       position: absolute;
       bottom: 4px;
@@ -233,11 +243,41 @@
       border-radius: 4px;
     }
 
-    /* Green highlight for active panel */
+    /* Active panel highlight */
     .panel-active {
       border-color: rgba(0, 255, 184, 0.9);
       box-shadow: 0 0 20px rgba(0, 255, 184, 0.5);
       transform: translateY(-1px);
+    }
+
+    /* Panel controls (reload on hover) */
+    .panel-controls {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      display: flex;
+      gap: 4px;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      z-index: 5;
+    }
+    .panel:hover .panel-controls {
+      opacity: 1;
+    }
+    .panel-reload-btn {
+      padding: 4px 6px;
+      border-radius: 999px;
+      border: none;
+      background: rgba(0,0,0,0.6);
+      color: #fff;
+      font-size: 11px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .panel-reload-btn:hover {
+      background: rgba(30,136,229,0.9);
     }
 
     .panelButton {
@@ -256,6 +296,7 @@
       background: #1e88e5 !important;
       border: 2px solid #4dabf7;
     }
+
     .group {
       margin-bottom: 8px;
       border-radius: 6px;
@@ -263,6 +304,7 @@
       overflow: hidden;
       border: 1px solid #333;
     }
+
     .group-header {
       padding: 6px 8px;
       font-size: 12px;
@@ -278,6 +320,7 @@
       font-size: 11px;
       opacity: 0.8;
     }
+
     .group-channels {
       display: none;
       padding: 6px;
@@ -307,7 +350,6 @@
       transform: translateY(-1px);
     }
 
-    /* Channel logo */
     .channel-logo {
       width: 32px;
       height: 32px;
@@ -352,6 +394,7 @@
       flex-shrink: 0;
     }
 
+    /* Cast / full-screen panel mode */
     body.cast-mode #sidebar {
       display: none !important;
     }
@@ -411,7 +454,7 @@
   </div>
 </div>
 
-<!-- APP UI (hidden until login succeeds) -->
+<!-- APP UI -->
 <div id="container">
   <div id="sidebar">
     <h3 style="margin:4px 0 8px 0;font-size:14px;">Select Panel</h3>
@@ -433,19 +476,42 @@
     </div>
 
     <div class="panel panel-active" id="panel1" draggable="true" data-video="video1">
-      <video id="video1" class="stream-player" autoplay muted playsinline></video>
+      <div class="panel-media" id="media_video1">
+        <video id="video1" class="stream-player" autoplay muted playsinline></video>
+      </div>
+      <div class="panel-media" id="media_web1" style="display:none;">
+        <iframe is="x-frame-bypass" id="web1" class="panel-iframe" allowfullscreen></iframe>
+      </div>
       <div class="panel-label" id="label_video1">Panel 1</div>
     </div>
+
     <div class="panel" id="panel2" draggable="true" data-video="video2">
-      <video id="video2" class="stream-player" autoplay muted playsinline></video>
+      <div class="panel-media" id="media_video2">
+        <video id="video2" class="stream-player" autoplay muted playsinline></video>
+      </div>
+      <div class="panel-media" id="media_web2" style="display:none;">
+        <iframe is="x-frame-bypass" id="web2" class="panel-iframe" allowfullscreen></iframe>
+      </div>
       <div class="panel-label" id="label_video2">Panel 2</div>
     </div>
+
     <div class="panel" id="panel3" draggable="true" data-video="video3">
-      <video id="video3" class="stream-player" autoplay muted playsinline></video>
+      <div class="panel-media" id="media_video3">
+        <video id="video3" class="stream-player" autoplay muted playsinline></video>
+      </div>
+      <div class="panel-media" id="media_web3" style="display:none;">
+        <iframe is="x-frame-bypass" id="web3" class="panel-iframe" allowfullscreen></iframe>
+      </div>
       <div class="panel-label" id="label_video3">Panel 3</div>
     </div>
+
     <div class="panel" id="panel4" draggable="true" data-video="video4">
-      <video id="video4" class="stream-player" autoplay muted playsinline></video>
+      <div class="panel-media" id="media_video4">
+        <video id="video4" class="stream-player" autoplay muted playsinline></video>
+      </div>
+      <div class="panel-media" id="media_web4" style="display:none;">
+        <iframe is="x-frame-bypass" id="web4" class="panel-iframe" allowfullscreen></iframe>
+      </div>
       <div class="panel-label" id="label_video4">Panel 4</div>
     </div>
   </div>
@@ -479,7 +545,7 @@ const CHANNEL_GROUPS = {
       channel: "ABC",
       logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/ABC-2021-LOGO.svg/2560px-ABC-2021-LOGO.svg.png",
       links: [
-        "httsp://fl1.moveonjoy.com/ABC/index.m3u8"
+        "https://fl1.moveonjoy.com/ABC/index.m3u8"
       ]
     },
     {
@@ -722,8 +788,8 @@ const CHANNEL_GROUPS = {
       links: [
         "https://fl1.moveonjoy.com/TSN_1/index.m3u8"
       ]
-      },
-      {
+    },
+    {
       channel: "Sportsnet West",
       logo: "https://img.zuzz.tv/assets/channels/3uG0nL2Wp3ey1ixpKnTZppIZPoukSILXBB0WX9HyuACmyK9Z3A.png",
       links: [
@@ -829,8 +895,53 @@ const CHANNEL_GROUPS = {
   ]
 };
 
+/* External Aus Streaming apps – open in separate windows snapped to panel */
+const EXTERNAL_APPS = [
+  {
+    name: "Kayo Sports",
+    url: "https://kayosports.com.au/",
+    key: "Kayo",
+    logo: "kayo-logo.png"
+  },
+  {
+    name: "Stan Sport",
+    url: "https://play.stan.com.au/sport",
+    key: "StanSport",
+    logo: "stan-sport-logo.png"
+  },
+  {
+    name: "Paramount+",
+    url: "https://www.paramountplus.com/collections/sports-hub-au/",
+    key: "ParamountPlus",
+    logo: "paramountplus-logo.png"
+  },
+  {
+    name: "Disney+ (ESPN)",
+    url: "https://www.disneyplus.com/en-gb/browse/espn",
+    key: "DisneyPlusESPN",
+    logo: "disneyplus-espn-logo.png"
+  }
+];
+
 let selectedVideoId = "video1";
 let audioSourceVideoId = "video1";
+let popupRefs = {};
+
+/* mode: "video" or "web" per panel */
+const modeByVideoId = {
+  video1: "video",
+  video2: "video",
+  video3: "video",
+  video4: "video"
+};
+
+/* remember web URLs per panel */
+const webUrlByVideoId = {
+  video1: null,
+  video2: null,
+  video3: null,
+  video4: null
+};
 
 const hlsInstances = { video1: null, video2: null, video3: null, video4: null };
 const linksByVideoId = { video1: [], video2: [], video3: [], video4: [] };
@@ -870,7 +981,6 @@ function initLogin() {
   const btn = document.getElementById("login-button");
   const error = document.getElementById("login-error");
 
-  // Auto-bypass login if "stay logged in" was previously enabled
   const remembered = localStorage.getItem(REMEMBER_KEY) === "1";
   if (remembered) {
     loginScreen.style.display = "none";
@@ -911,6 +1021,25 @@ function initLogin() {
   });
 }
 
+/* ---------- MEDIA MODES ---------- */
+
+function setPanelMode(videoId, mode) {
+  modeByVideoId[videoId] = mode;
+
+  const num = videoId.replace("video", "");
+  const videoContainer = document.getElementById("media_" + videoId);
+  const webContainer = document.getElementById("media_web" + num);
+
+  if (mode === "web") {
+    if (videoContainer) videoContainer.style.display = "none";
+    if (webContainer) webContainer.style.display = "block";
+    destroyHls(videoId);
+  } else {
+    if (videoContainer) videoContainer.style.display = "block";
+    if (webContainer) webContainer.style.display = "none";
+  }
+}
+
 /* ---------- APP LOGIC ---------- */
 
 function updateCastModeUI() {
@@ -925,7 +1054,6 @@ function updateCastModeUI() {
     document.querySelectorAll(".panel").forEach(p => p.classList.remove("cast-active"));
     layoutPanels();
   }
-  // update highlight based on cast mode (no green in cast mode)
   updatePanelSelectionUI();
 }
 
@@ -979,6 +1107,9 @@ function handleStreamError(videoId) {
 function actuallyLoadCurrent(videoId) {
   const video = document.getElementById(videoId);
   if (!video) return;
+
+  setPanelMode(videoId, "video");
+
   const links = linksByVideoId[videoId] || [];
   const idx = currentLinkIndex[videoId] || 0;
   if (!links.length || idx >= links.length) return;
@@ -1009,6 +1140,7 @@ function actuallyLoadCurrent(videoId) {
   updateAudioState();
 }
 
+/* Load an HLS channel into the selected panel (video mode) */
 function loadChannelIntoSelected(groupName, channelObj) {
   const videoId = selectedVideoId;
   linksByVideoId[videoId] = channelObj.links.slice();
@@ -1024,7 +1156,27 @@ function loadChannelIntoSelected(groupName, channelObj) {
     label.textContent = channelObj.channel;
   }
 
+  webUrlByVideoId[videoId] = null;
+  setPanelMode(videoId, "video");
   actuallyLoadCurrent(videoId);
+}
+
+/* Load a WEBSITE into the selected panel (web mode) */
+function loadWebsiteIntoSelected(url, labelName) {
+  const videoId = selectedVideoId;
+  const num = videoId.replace("video", "");
+  const iframe = document.getElementById("web" + num);
+  if (!iframe) return;
+
+  webUrlByVideoId[videoId] = url;
+  iframe.src = url;
+
+  const label = document.getElementById("label_" + videoId);
+  if (label) {
+    label.textContent = labelName;
+  }
+
+  setPanelMode(videoId, "web");
 }
 
 function layoutPanels() {
@@ -1131,6 +1283,78 @@ function buildGroupsUI() {
   }
 }
 
+/* Build the “Aus Streaming” external apps group (collapsed by default, uses popups) */
+function buildExternalAppsUI() {
+  const container = document.getElementById("channelGroups");
+  if (!container) return;
+
+  const groupDiv = document.createElement("div");
+  groupDiv.className = "group";
+
+  const header = document.createElement("div");
+  header.className = "group-header";
+  const titleSpan = document.createElement("span");
+  titleSpan.textContent = "Aus Streaming";
+  const chev = document.createElement("span");
+  chev.className = "chevron";
+  chev.textContent = "▶";
+  header.appendChild(titleSpan);
+  header.appendChild(chev);
+
+  const channelsDiv = document.createElement("div");
+  channelsDiv.className = "group-channels";
+  channelsDiv.style.display = "none";
+
+  EXTERNAL_APPS.forEach(app => {
+    const btn = document.createElement("button");
+    btn.className = "channel-card";
+
+    if (app.logo) {
+      const logo = document.createElement("img");
+      logo.className = "channel-logo";
+      logo.src = app.logo;
+      logo.alt = app.name;
+      btn.appendChild(logo);
+    }
+
+    const meta = document.createElement("div");
+    meta.className = "channel-meta";
+
+    const nameSpan = document.createElement("span");
+    nameSpan.className = "channel-name";
+    nameSpan.textContent = app.name;
+    meta.appendChild(nameSpan);
+
+    const tagSpan = document.createElement("span");
+    tagSpan.className = "channel-tag";
+    tagSpan.textContent = "Streaming app";
+    meta.appendChild(tagSpan);
+
+    btn.appendChild(meta);
+
+    const badge = document.createElement("span");
+    badge.className = "channel-live-badge";
+    badge.textContent = "Open";
+    btn.appendChild(badge);
+
+    // Use popup with auto-snap to panel and periodic focus
+    btn.onclick = () => openExternalForSelectedPanel(app.url, app.key, app.name);
+
+    channelsDiv.appendChild(btn);
+  });
+
+  header.onclick = () => {
+    const isVisible = channelsDiv.style.display === "block";
+    channelsDiv.style.display = isVisible ? "none" : "block";
+    chev.textContent = isVisible ? "▶" : "▼";
+  };
+
+  groupDiv.appendChild(header);
+  groupDiv.appendChild(channelsDiv);
+  container.appendChild(groupDiv);
+}
+
+/* Custom URL stream (video mode) */
 function handleCustomUrl() {
   const url = prompt("Enter stream URL (.m3u8 or other):");
   if (!url) return;
@@ -1148,7 +1372,82 @@ function handleCustomUrl() {
   if (label) {
     label.textContent = "Custom";
   }
+  webUrlByVideoId[videoId] = null;
+  setPanelMode(videoId, "video");
   actuallyLoadCurrent(videoId);
+}
+
+/* Popup helper with auto-snap to panel AND periodic focus */
+function openExternalForSelectedPanel(url, key, displayName) {
+  const panelSelector = '.panel[data-video="' + selectedVideoId + '"]';
+  const panel = document.querySelector(panelSelector);
+
+  // If no panel, just open a normal tab
+  if (!panel) {
+    window.open(url, "_blank");
+    return;
+  }
+
+  const rect = panel.getBoundingClientRect();
+  const left = Math.floor(window.screenX + rect.left);
+  const top = Math.floor(window.screenY + rect.top);
+  const width = Math.floor(rect.width);
+  const height = Math.floor(rect.height);
+
+  const features = [
+    "left=" + left,
+    "top=" + top,
+    "width=" + width,
+    "height=" + height,
+    "resizable=yes",
+    "scrollbars=yes"
+  ].join(",");
+
+  const windowName = "Sportsbar_" + key + "_" + selectedVideoId;
+  const win = window.open(url, windowName, features);
+
+  if (!win) {
+    alert("Your browser blocked the window. Please allow pop-ups for this site.");
+    return;
+  }
+
+  // Update panel label to show what's there
+  const label = document.getElementById("label_" + selectedVideoId);
+  if (label && displayName) {
+    label.textContent = displayName;
+  }
+
+  popupRefs[windowName] = {
+    win,
+    panelSelector
+  };
+
+  // Periodically re-align AND focus the popup to keep it on top
+  const interval = setInterval(() => {
+    const ref = popupRefs[windowName];
+    if (!ref || ref.win.closed) {
+      clearInterval(interval);
+      delete popupRefs[windowName];
+      return;
+    }
+
+    const p = document.querySelector(ref.panelSelector);
+    if (!p) return;
+
+    const r = p.getBoundingClientRect();
+    const l = Math.floor(window.screenX + r.left);
+    const t = Math.floor(window.screenY + r.top);
+    const w = Math.floor(r.width);
+    const h = Math.floor(r.height);
+
+    try {
+      ref.win.moveTo(l, t);
+      ref.win.resizeTo(w, h);
+      ref.win.focus();
+    } catch (e) {
+      // Browsers may restrict moveTo/resizeTo/focus; ignore errors
+    }
+  }, 1000);
 }
 
 function enterPageFullscreen() {
@@ -1255,21 +1554,72 @@ function swapPanels(panelIdA, panelIdB) {
   currentLinkIndex[videoIdA] = currentLinkIndex[videoIdB];
   currentLinkIndex[videoIdB] = tmpIdx;
 
-  if (linksByVideoId[videoIdA] && linksByVideoId[videoIdA].length) {
-    actuallyLoadCurrent(videoIdA);
-  }
-  if (linksByVideoId[videoIdB] && linksByVideoId[videoIdB].length) {
-    actuallyLoadCurrent(videoIdB);
-  }
+  const tmpMode = modeByVideoId[videoIdA];
+  modeByVideoId[videoIdA] = modeByVideoId[videoIdB];
+  modeByVideoId[videoIdB] = tmpMode;
+
+  const tmpWebUrl = webUrlByVideoId[videoIdA];
+  webUrlByVideoId[videoIdA] = webUrlByVideoId[videoIdB];
+  webUrlByVideoId[videoIdB] = tmpWebUrl;
+
+  [videoIdA, videoIdB].forEach((videoId) => {
+    const mode = modeByVideoId[videoId];
+    if (mode === "web") {
+      const num = videoId.replace("video", "");
+      const iframe = document.getElementById("web" + num);
+      if (iframe) {
+        iframe.src = webUrlByVideoId[videoId] || "about:blank";
+      }
+      setPanelMode(videoId, "web");
+    } else {
+      if (linksByVideoId[videoId] && linksByVideoId[videoId].length) {
+        actuallyLoadCurrent(videoId);
+      } else {
+        setPanelMode(videoId, "video");
+      }
+    }
+  });
 }
 
 window.addEventListener("load", () => {
   initLogin();
   buildGroupsUI();
+  buildExternalAppsUI();
   initDragAndDrop();
   updateAudioState();
   updatePanelSelectionUI();
-  showTopControls(); // show at start, then auto-hide
+  showTopControls();
+
+  document.querySelectorAll(".panel").forEach(panel => {
+    const videoId = panel.dataset.video;
+    if (!videoId) return;
+    const controls = document.createElement("div");
+    controls.className = "panel-controls";
+
+    const reloadBtn = document.createElement("button");
+    reloadBtn.className = "panel-reload-btn";
+    reloadBtn.title = "Reload";
+    reloadBtn.textContent = "⟳";
+
+    reloadBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const mode = modeByVideoId[videoId] || "video";
+      if (mode === "web") {
+        const num = videoId.replace("video", "");
+        const iframe = document.getElementById("web" + num);
+        if (iframe && iframe.src) {
+          iframe.src = iframe.src;
+        } else if (webUrlByVideoId[videoId]) {
+          iframe.src = webUrlByVideoId[videoId];
+        }
+      } else {
+        actuallyLoadCurrent(videoId);
+      }
+    });
+
+    controls.appendChild(reloadBtn);
+    panel.appendChild(controls);
+  });
 
   const screenEl = document.getElementById("screen");
   if (screenEl) {
@@ -1317,7 +1667,7 @@ window.addEventListener("load", () => {
   document.querySelectorAll(".panelButton").forEach(btn => {
     btn.addEventListener("click", () => {
       const vid = btn.getAttribute("data-video");
-      setPanel(vid);
+      if (vid) setPanel(vid);
     });
   });
 
@@ -1343,3 +1693,4 @@ window.addEventListener("resize", () => {
 
 </body>
 </html>
+
