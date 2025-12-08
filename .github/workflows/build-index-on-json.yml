@@ -1,0 +1,54 @@
+name: Build index.html from JSON
+
+permissions:
+  contents: write   # allow the workflow to push commits
+
+on:
+  push:
+    # Only trigger when these files change
+    paths:
+      - 'sportsplus_serv_urls.json'
+      - 'index.template.html'
+      - 'build-index-from-json.mjs'
+  workflow_dispatch: {}
+
+jobs:
+  build-index:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true  # use GITHUB_TOKEN for pushing
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install deps (if any)
+        run: |
+          if [ -f package-lock.json ] || [ -f npm-shrinkwrap.json ]; then
+            npm ci
+          elif [ -f package.json ]; then
+            npm install
+          else
+            echo "No package.json, skipping npm install"
+          fi
+
+      - name: Build index.html from JSON
+        run: node build-index-from-json.mjs
+
+      - name: Commit and push index.html if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          if [ -n "$(git status --porcelain index.html)" ]; then
+            git add index.html
+            git commit -m "Auto-build index.html from JSON [skip ci]"
+            git push
+          else
+            echo "No changes to index.html"
+          fi
