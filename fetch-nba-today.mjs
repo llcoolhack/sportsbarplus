@@ -1,61 +1,61 @@
 import puppeteer from 'puppeteer';
 import fs from 'fs';
 
-// ---------- CONFIG ----------
-
-// Credentials: use env vars if set, otherwise fall back to hard-coded.
+// ---------- CONFIG: credentials from env (with optional local fallback) ----------
 const USERNAME = process.env.ZUZZ_USERNAME || 'YOUR_EMAIL_HERE';
 const PASSWORD = process.env.ZUZZ_PASSWORD || 'YOUR_PASSWORD_HERE';
 
-// Where to find NBA games
-const NBA_LEAGUE_URL = 'https://zuzz.tv/?league=NBA';
-
-// Channels we want, with the slug used in ?channel= and a substring to match
+// Each channel has:
+//  - slug:  for ?channel=slug on zuzz.tv
+//  - name:  for labeling
+//  - match: substring that MUST appear in the final playlist URL
 const CHANNELS = [
   {
-    slug: 'snontario',
-    name: 'Sportsnet Ontario',
+    slug:  'snontario',
+    name:  'Sportsnet Ontario',
     match: 'snontario'
   },
   {
-    slug: 'snwest',
-    name: 'Sportsnet West',
+    slug:  'snwest',
+    name:  'Sportsnet West',
     match: 'snwest'
   },
   {
-    slug: 'nesn12',
-    name: 'NESN',
+    slug:  'nesn12',
+    name:  'NESN',
     match: 'nesn'
   },
   {
-    slug: 'nbc-boston',
-    name: 'NBC Sports Boston',
+    slug:  'nbc-boston',
+    name:  'NBC Sports Boston',
     match: 'nbc-boston'
   },
   {
-    slug: 'msg-sn',
-    name: 'MSG Sportsnet',
+    slug:  'msg-sn',      // MSG Sportsnet
+    name:  'MSG Sportsnet',
     match: 'msg-sn'
   },
   {
-    slug: 'espn',
-    name: 'ESPN',
+    slug:  'espn',
+    name:  'ESPN',
     match: '/espn/'
   },
   {
-    slug: 'espn2',
-    name: 'ESPN2',
+    slug:  'espn2',
+    name:  'ESPN2',
     match: '/espn2/'
   }
 ];
 
-// ---------- HELPER FUNCTIONS ----------
+const NBA_LEAGUE_URL = 'https://zuzz.tv/?league=NBA';
+
+// ---------- Helpers ----------
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// Only keep proper HLS master playlists with a token
+// Only keep HLS playlist URLs with tokens, not chunk URLs.
 function isInterestingPlaylist(url) {
   if (!url.includes('.m3u8')) return false;
   if (!url.includes('/playlist.m3u8')) return false;
@@ -63,29 +63,27 @@ function isInterestingPlaylist(url) {
   return true;
 }
 
-// Generate index.html from index.template.html if present
 function buildIndexHtml(results) {
   const templatePath = 'index.template.html';
-  const outputPath = 'index.html';
+  const outputPath   = 'index.html';
 
   if (!fs.existsSync(templatePath)) {
-    console.log('ℹ️ index.template.html not found, skipping index.html generation.');
-    return;
+    throw new Error(`Template file not found: ${templatePath}`);
   }
 
   let html = fs.readFileSync(templatePath, 'utf8');
 
   const chan = results.channels || {};
-  const nba = results.nbaGames || [];
+  const nba  = results.nbaGames || [];
 
   const replaceMap = {
-    '%%SNONTARIO_URL%%': chan['Sportsnet Ontario'] || '',
-    '%%SNWEST_URL%%': chan['Sportsnet West'] || '',
-    '%%NESN_URL%%': chan['NESN'] || '',
+    '%%SNONTARIO_URL%%':  chan['Sportsnet Ontario'] || '',
+    '%%SNWEST_URL%%':     chan['Sportsnet West'] || '',
+    '%%NESN_URL%%':       chan['NESN'] || '',
     '%%NBC_BOSTON_URL%%': chan['NBC Sports Boston'] || '',
-    '%%MSG_SN_URL%%': chan['MSG Sportsnet'] || '',
-    '%%ESPN_URL%%': chan['ESPN'] || '',
-    '%%ESPN2_URL%%': chan['ESPN2'] || ''
+    '%%MSG_SN_URL%%':     chan['MSG Sportsnet'] || '',
+    '%%ESPN_URL%%':       chan['ESPN'] || '',
+    '%%ESPN2_URL%%':      chan['ESPN2'] || ''
   };
 
   const lpTokens = [
@@ -101,7 +99,11 @@ function buildIndexHtml(results) {
 
   lpTokens.forEach((token, idx) => {
     const game = nba[idx];
-    replaceMap[token] = game && game.url ? game.url : '';
+    if (game && game.url) {
+      replaceMap[token] = game.url;
+    } else {
+      replaceMap[token] = '';
+    }
   });
 
   for (const [token, value] of Object.entries(replaceMap)) {
@@ -113,57 +115,120 @@ function buildIndexHtml(results) {
   console.log(`📝 Generated ${outputPath} from ${templatePath}`);
 }
 
-// ---------- LOGIN USING OLD WORKING SELECTORS ----------
-
+// More robust login: doesn’t assume specific IDs.
 async function loginToBilling(page) {
   console.log('➡️ Opening login page...');
   await page.goto('https://billing.zuzz.tv/login', {
-    waitUntil: 'networkidle2',
+    waitUntil: 'domcontentloaded',
     timeout: 60000
   });
 
-  // Old selectors that we know worked locally
-  await page.waitForSelector('#amember-login', { timeout: 60000 });
-  await page.type('#amember-login', USERNAME, { delay: 40 });
+  // Let any JS / redirects settle
+  await sleep(5000);
 
-  await page.waitForSelector('#amember-pass', { timeout: 60000 });
-  await page.type('#amember-pass', PASSWORD, { delay: 40 });
+  const currentUrl = page.url();
+  const title = await page.title();
+  console.log(`🔍 After initial load: URL=${currentUrl}, title="${title}"`);
 
-  // Try a submit input first, then fallback
-  const submitSelector =
-    'input[type="submit"][value="Login"], input[type="submit"], button[type="submit"]';
-
-  const submit = await page.$(submitSelector);
-  if (submit) {
-    await submit.click();
-  } else {
-    // Fallback: press Enter on password field
-    const pass = await page.$('#amember-pass');
-    if (pass) await pass.press('Enter');
+  // Try to find any form on the page
+  let formHandle;
+  try {
+    formHandle = await page.waitForSelector('form', {
+      visible: true,
+      timeout: 60000
+    });
+  } catch (err) {
+    // Dump the HTML we actually got so you can inspect (locally or in logs).
+    const htmlDump = await page.content();
+    fs.writeFileSync('login-page.html', htmlDump);
+    console.error('❌ Could not find a <form> on billing.zuzz.tv/login. Saved login-page.html for inspection.');
+    throw new Error('Login form not found (likely anti-bot / different page on GitHub runner).');
   }
 
-  await page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 60000 });
-  console.log('✅ Logged in successfully. Now on:', page.url());
+  if (!formHandle) {
+    const htmlDump = await page.content();
+    fs.writeFileSync('login-page.html', htmlDump);
+    throw new Error('Login form handle is null after waitForSelector.');
+  }
+
+  async function findFirstSelector(selectors) {
+    for (const sel of selectors) {
+      const handle = await page.$(sel);
+      if (handle) return { sel, handle };
+    }
+    return null;
+  }
+
+  const usernameSelectors = [
+    'input#amember-login',
+    'input[name="amember_login"]',
+    'input[name="login"]',
+    'input[type="email"]',
+    'input[type="text"]'
+  ];
+
+  const passwordSelectors = [
+    'input#amember-pass',
+    'input[name="amember_pass"]',
+    'input[name="password"]',
+    'input[type="password"]'
+  ];
+
+  const userField = await findFirstSelector(usernameSelectors);
+  const passField = await findFirstSelector(passwordSelectors);
+
+  if (!userField || !passField) {
+    const htmlDump = await page.content();
+    fs.writeFileSync('login-page.html', htmlDump);
+    console.error('❌ Could not find username/password fields. Saved login-page.html.');
+    throw new Error('Could not find username or password fields on login page.');
+  }
+
+  console.log(`✏️ Typing username into ${userField.sel}`);
+  await userField.handle.click({ clickCount: 3 });
+  await userField.handle.type(USERNAME, { delay: 40 });
+
+  console.log(`✏️ Typing password into ${passField.sel}`);
+  await passField.handle.click({ clickCount: 3 });
+  await passField.handle.type(PASSWORD, { delay: 40 });
+
+  const submitButton =
+    (await page.$('input[type="submit"]')) ||
+    (await page.$('button[type="submit"]')) ||
+    null;
+
+  if (submitButton) {
+    console.log('➡️ Clicking submit button...');
+    await submitButton.click();
+  } else {
+    console.log('➡️ No explicit submit button found, pressing Enter on password field...');
+    await passField.handle.press('Enter');
+  }
+
+  await Promise.race([
+    page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 60000 }).catch(() => {}),
+    sleep(60000)
+  ]);
+
+  console.log(`✅ Login step finished. Current URL: ${page.url()}`);
 }
 
-// ---------- MAIN SCRAPER ----------
+// ---------- MAIN FETCHER ----------
 
 async function fetchSportsplusUrls() {
   if (!USERNAME || !PASSWORD) {
-    throw new Error('ZUZZ_USERNAME or ZUZZ_PASSWORD not set and no hard-coded fallback provided.');
+    throw new Error('ZUZZ_USERNAME or ZUZZ_PASSWORD env vars are not set and no hard-coded fallbacks provided.');
   }
 
-  // Launch real Chrome, non-headless
   const browser = await puppeteer.launch({
-    headless: false,
-    executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+    headless: true,
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
     defaultViewport: null
   });
 
   const page = await browser.newPage();
 
-  // Slightly realistic user agent
+  // Slightly more “realistic” UA to reduce bot suspicion
   await page.setUserAgent(
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) ' +
     'AppleWebKit/537.36 (KHTML, like Gecko) ' +
@@ -171,14 +236,13 @@ async function fetchSportsplusUrls() {
   );
 
   const results = {
-    channels: {},  // { "Sportsnet Ontario": "https://..." }
+    channels: {},  // { "Sportsnet West": "https://..." }
     nbaGames: []   // [ { label, url }, ... ]
   };
 
   let currentContext = null;
   const seenUrls = new Set();
 
-  // Listen for HLS responses
   page.on('response', async (response) => {
     try {
       const url = response.url();
@@ -191,12 +255,12 @@ async function fetchSportsplusUrls() {
       if (currentContext.type === 'channel') {
         const m = currentContext.matchSubstr;
         if (m && !lcUrl.includes(m.toLowerCase())) {
-          // This playlist doesn't match the channel we care about
           return;
         }
       } else if (currentContext.type === 'nba') {
-        // For NBA games, require "nba" in URL so we don't pick up random stuff
-        if (!lcUrl.includes('nba')) return;
+        if (!/nba/.test(lcUrl)) {
+          return;
+        }
       }
 
       seenUrls.add(url);
@@ -215,15 +279,15 @@ async function fetchSportsplusUrls() {
         }
       }
     } catch {
-      // Ignore listener issues
+      // Ignore listener errors
     }
   });
 
   try {
-    // 1️⃣ Log in
+    // 1️⃣ Login
     await loginToBilling(page);
 
-    // 2️⃣ Capture specific channels one by one
+    // 2️⃣ Capture specific channels
     for (const chan of CHANNELS) {
       const chanUrl = `https://zuzz.tv/?channel=${chan.slug}`;
       console.log(`\n🎯 Fetching channel: ${chan.name} (${chanUrl})`);
@@ -234,16 +298,16 @@ async function fetchSportsplusUrls() {
         matchSubstr: chan.match
       };
 
-      await page.goto(chanUrl, {
-        waitUntil: 'networkidle2',
-        timeout: 60000
-      });
+      await page.goto(chanUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
 
-      // Let the player boot up and start HLS requests
+      // Let the player load & fire HLS requests
       await sleep(20000);
 
       if (!results.channels[chan.name]) {
-        console.warn(`⚠️ No playlist.m3u8 captured for ${chan.name}`);
+        console.warn(
+          `⚠️ No matching playlist.m3u8 captured for ${chan.name}. ` +
+          `Check slug (${chan.slug}), or that the channel is live.`
+        );
       } else {
         console.log(`✅ Captured playlist for ${chan.name}`);
       }
@@ -251,17 +315,11 @@ async function fetchSportsplusUrls() {
 
     currentContext = null;
 
-    // 3️⃣ NBA league games from NBA tab
+    // 3️⃣ Capture today's NBA games from NBA tab
     console.log('\n🏀 Navigating to NBA league page...');
-    await page.goto(NBA_LEAGUE_URL, {
-      waitUntil: 'networkidle2',
-      timeout: 60000
-    });
+    await page.goto(NBA_LEAGUE_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
+    await sleep(5000);
 
-    // Give the page a bit of time
-    await sleep(8000);
-
-    // Find "Watch" buttons/links and give them labels
     const games = await page.evaluate(() => {
       const buttons = Array.from(
         document.querySelectorAll('button, a')
@@ -269,7 +327,6 @@ async function fetchSportsplusUrls() {
 
       return buttons.map((btn, index) => {
         let label = '';
-
         const card =
           btn.closest('[data-game], [data-event], .game, .game-card, .event, .matchup') ||
           btn.parentElement;
@@ -301,16 +358,15 @@ async function fetchSportsplusUrls() {
         label: game.label
       };
 
-      // Click the button inside page context
       await page.evaluate((buttonIndex) => {
         const btns = Array.from(
           document.querySelectorAll('button, a')
         ).filter(el => /watch/i.test(el.textContent));
+
         const btn = btns[buttonIndex];
         if (btn) btn.click();
       }, game.index);
 
-      // Let the player load and fire off HLS requests
       await sleep(20000);
 
       const alreadyHave = results.nbaGames.find(g => g.label === game.label);
@@ -321,7 +377,7 @@ async function fetchSportsplusUrls() {
       }
     }
 
-    // 4️⃣ Save JSON + index.html
+    // 4️⃣ Save JSON + generate index.html
     fs.writeFileSync(
       'sportsplus_serv_urls.json',
       JSON.stringify(results, null, 2)
@@ -330,7 +386,6 @@ async function fetchSportsplusUrls() {
 
     buildIndexHtml(results);
   } finally {
-    // Don’t auto-close if you want to inspect; comment this out while debugging.
     await browser.close();
   }
 }
