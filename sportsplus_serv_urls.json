@@ -1,12 +1,4 @@
 {
-  "channels": {
-    "Sportsnet Ontario": "https://serv10g.zuzzplayer.xyz/hls/snontario/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTIvOC8yMDI1IDE6NTc6NTkgUE0maGFzaF92YWx1ZT1vTjlBZ3p0aHVZdit1R3NXbTluTUZRPT0mdmFsaWRtaW51dGVzPTI4MA==",
-    "Sportsnet West": "https://serv10g2.zuzzplayer.xyz/hls/snwest/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTIvOC8yMDI1IDE6NTg6MjEgUE0maGFzaF92YWx1ZT00akttVVVOV0pWOUhkTXNLZjhmNzZBPT0mdmFsaWRtaW51dGVzPTI4MA==",
-    "NESN": "https://serv10g2.zuzzplayer.xyz/hls/nesn12/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTIvOC8yMDI1IDE6NTg6NDMgUE0maGFzaF92YWx1ZT1sTkM5ZUlSZGk1cGVNVUhXQjNBMm9nPT0mdmFsaWRtaW51dGVzPTI4MA==",
-    "NBC Sports Boston": "https://serv10g2.zuzzplayer.xyz/hls/nbc-boston/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTIvOC8yMDI1IDE6NTk6MDYgUE0maGFzaF92YWx1ZT1OU05ZYmJRNVd4WkVySjNPRWdDTmFRPT0mdmFsaWRtaW51dGVzPTI4MA==",
-    "MSG Sportsnet": "https://serv10g2.zuzzplayer.xyz/hls/msg-sn/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTIvOC8yMDI1IDE6NTk6MjggUE0maGFzaF92YWx1ZT1RTlFXRGhBQmhDbzJTMWljcEdkdDFnPT0mdmFsaWRtaW51dGVzPTI4MA==",
-    "ESPN": "https://serv10g.zuzzplayer.xyz/hls/espn/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTIvOC8yMDI1IDE6NTk6NDkgUE0maGFzaF92YWx1ZT1aRUxVSTNnTTBLSDl6V2VYZWhqay9RPT0mdmFsaWRtaW51dGVzPTI4MA==",
-    "ESPN2": "https://serv10g2.zuzzplayer.xyz/hls/espn2/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTIvOC8yMDI1IDI6MDA6MTIgUE0maGFzaF92YWx1ZT0zT2VjT2MxT0l3MXhIREtBNEVFQ0dRPT0mdmFsaWRtaW51dGVzPTI4MA=="
-  },
+  "channels": {},
   "nbaGames": []
 }
