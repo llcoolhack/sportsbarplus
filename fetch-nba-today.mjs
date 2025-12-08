@@ -172,21 +172,83 @@ async function fetchSportsplusUrls() {
   });
 
   try {
-    // 1️⃣ Login
-    console.log('➡️ Opening login page...');
-    await page.goto('https://billing.zuzz.tv/login', { waitUntil: 'networkidle2' });
+   console.log('➡️ Opening login page...');
+await page.goto('https://billing.zuzz.tv/login', {
+  waitUntil: 'networkidle2',
+  timeout: 60000,
+});
 
-    await page.waitForSelector('#amember-login', { visible: true });
-    await page.type('#amember-login', USERNAME, { delay: 40 });
+// Wait for *any* form to appear
+const loginForm = await page.waitForSelector('form', {
+  visible: true,
+  timeout: 60000,
+});
 
-    await page.waitForSelector('#amember-pass', { visible: true });
-    await page.type('#amember-pass', PASSWORD, { delay: 40 });
+if (!loginForm) {
+  throw new Error('Login form not found on billing.zuzz.tv/login');
+}
 
-    await page.waitForSelector('input[type="submit"][value="Login"]', { visible: true });
-    await page.click('input[type="submit"][value="Login"]');
+// Try several possible selectors for username/email
+const usernameSelectors = [
+  'input#amember-login',
+  'input[name="amember_login"]',
+  'input[name="login"]',
+  'input[type="email"]',
+  'input[type="text"]',
+];
 
-    await page.waitForNavigation({ waitUntil: 'networkidle2' });
-    console.log('✅ Logged in successfully');
+// Try several possible selectors for password
+const passwordSelectors = [
+  'input#amember-pass',
+  'input[name="amember_pass"]',
+  'input[name="password"]',
+  'input[type="password"]',
+];
+
+async function findFirstSelector(page, selectors) {
+  for (const sel of selectors) {
+    const handle = await page.$(sel);
+    if (handle) return { sel, handle };
+  }
+  return null;
+}
+
+const userField = await findFirstSelector(page, usernameSelectors);
+const passField = await findFirstSelector(page, passwordSelectors);
+
+if (!userField || !passField) {
+  console.log('Current page URL:', page.url());
+  throw new Error('Could not find username or password input on login page');
+}
+
+// Type credentials
+await userField.handle.click({ clickCount: 3 });
+await userField.handle.type(USERNAME, { delay: 40 });
+
+await passField.handle.click({ clickCount: 3 });
+await passField.handle.type(PASSWORD, { delay: 40 });
+
+// Find a submit button
+const submitButton =
+  (await page.$('input[type="submit"]')) ||
+  (await page.$('button[type="submit"]')) ||
+  null;
+
+if (submitButton) {
+  await submitButton.click();
+} else {
+  // Fallback: press Enter in password field
+  await passField.handle.press('Enter');
+}
+
+// Wait for navigation or dashboard indicator
+await Promise.race([
+  page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 60000 }),
+  page.waitForTimeout(60000),
+]);
+
+console.log('✅ Login step completed (either navigated or timed out but no selector error).');
+
 
     // 2️⃣ Capture specific channels
     for (const chan of CHANNELS) {
