@@ -1,0 +1,11 @@
+{
+  "name": "sportsplus-token-fetcher",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "fetch": "node fetch-nba-today.mjs"
+  },
+  "dependencies": {
+    "puppeteer": "^23.0.0"
+  }
+}
