@@ -1,16 +1,18 @@
 name: Update stream URLs
 
+permissions:
+  contents: write   # allow pushing commits
+
 on:
   schedule:
-    # Runs 6 times per day, ~every 4h40m (280 minutes)
-    # NOTE: These times are in UTC
-    - cron: '0 0 * * *'    # 00:00 UTC
-    - cron: '40 4 * * *'   # 04:40 UTC
-    - cron: '20 9 * * *'   # 09:20 UTC
-    - cron: '0 14 * * *'   # 14:00 UTC
-    - cron: '40 18 * * *'  # 18:40 UTC
-    - cron: '20 23 * * *'  # 23:20 UTC
-  # Manual trigger if you want to run it on demand
+    # Runs 6 times per day, ~every 4h40m (280 minutes), UTC
+    - cron: '0 0 * * *'
+    - cron: '40 4 * * *'
+    - cron: '20 9 * * *'
+    - cron: '0 14 * * *'
+    - cron: '40 18 * * *'
+    - cron: '20 23 * * *'
+  # Manual trigger
   workflow_dispatch: {}
 
 jobs:
@@ -21,8 +23,7 @@ jobs:
       - name: Check out repo
         uses: actions/checkout@v4
         with:
-          # Needed so we can push back to the same branch
-          persist-credentials: true
+          persist-credentials: true   # use GITHUB_TOKEN for push
 
       - name: Set up Node
         uses: actions/setup-node@v4
