@@ -8,9 +8,6 @@
   <link rel="icon" type="image/png" href="sportsbar-icon.png">
 
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-  <script src="https://unpkg.com/@ungap/custom-elements-builtin"></script>
-  <script type="module" src="https://unpkg.com/x-frame-bypass"></script>
-
   <style>
     html, body {
       margin: 0;
@@ -58,6 +55,7 @@
       text-transform: uppercase;
       letter-spacing: 0.28em;
       text-align: center;
+      margin-bottom: 10px;
       background: linear-gradient(120deg, #00ffd1, #10b4ff, #ff2f6e);
       -webkit-background-clip: text;
       background-clip: text;
@@ -147,8 +145,12 @@
 
     /* ---------- APP LAYOUT ---------- */
     #container {
+      display: none; /* revealed after successful login */
       width: 100vw;
       height: 100vh;
+    }
+
+    #container {
       display: flex;
       overflow: hidden;
     }
@@ -166,13 +168,6 @@
       width: 0 !important;
       padding: 0 !important;
       opacity: 0;
-    }
-
-    #screen {
-      flex: 1;
-      position: relative;
-      background: #000;
-      overflow: hidden;
     }
 
     /* Top-right controls with fade / auto-hide */
@@ -202,6 +197,13 @@
       white-space: nowrap;
     }
 
+    #screen {
+      flex: 1;
+      position: relative;
+      background: #000;
+      overflow: hidden;
+    }
+
     .panel {
       position: absolute;
       overflow: hidden;
@@ -209,30 +211,18 @@
       border: 1px solid #222;
       box-sizing: border-box;
     }
-
-    .panel-media {
-      position: absolute;
-      inset: 0;
-    }
-
     .panel video {
+      position: absolute;
+      top: 0;
+      left: 0;
       width: 100%;
       height: 100%;
       object-fit: fill;
       background: #000;
     }
-
-    .panel-iframe {
-      width: 100%;
-      height: 100%;
-      border: 0;
-      background: #000;
-    }
-
     .panel.drag-over {
       outline: 3px dashed #1e88e5;
     }
-
     .panel-label {
       position: absolute;
       bottom: 4px;
@@ -243,41 +233,11 @@
       border-radius: 4px;
     }
 
-    /* Active panel highlight */
+    /* Green highlight for active panel */
     .panel-active {
       border-color: rgba(0, 255, 184, 0.9);
       box-shadow: 0 0 20px rgba(0, 255, 184, 0.5);
       transform: translateY(-1px);
-    }
-
-    /* Panel controls (reload on hover) */
-    .panel-controls {
-      position: absolute;
-      top: 6px;
-      right: 6px;
-      display: flex;
-      gap: 4px;
-      opacity: 0;
-      transition: opacity 0.2s ease;
-      z-index: 5;
-    }
-    .panel:hover .panel-controls {
-      opacity: 1;
-    }
-    .panel-reload-btn {
-      padding: 4px 6px;
-      border-radius: 999px;
-      border: none;
-      background: rgba(0,0,0,0.6);
-      color: #fff;
-      font-size: 11px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .panel-reload-btn:hover {
-      background: rgba(30,136,229,0.9);
     }
 
     .panelButton {
@@ -296,7 +256,6 @@
       background: #1e88e5 !important;
       border: 2px solid #4dabf7;
     }
-
     .group {
       margin-bottom: 8px;
       border-radius: 6px;
@@ -304,7 +263,6 @@
       overflow: hidden;
       border: 1px solid #333;
     }
-
     .group-header {
       padding: 6px 8px;
       font-size: 12px;
@@ -320,7 +278,6 @@
       font-size: 11px;
       opacity: 0.8;
     }
-
     .group-channels {
       display: none;
       padding: 6px;
@@ -350,6 +307,7 @@
       transform: translateY(-1px);
     }
 
+    /* Channel logo */
     .channel-logo {
       width: 32px;
       height: 32px;
@@ -394,7 +352,6 @@
       flex-shrink: 0;
     }
 
-    /* Cast / full-screen panel mode */
     body.cast-mode #sidebar {
       display: none !important;
     }
@@ -454,7 +411,7 @@
   </div>
 </div>
 
-<!-- APP UI -->
+<!-- APP UI (hidden until login succeeds) -->
 <div id="container">
   <div id="sidebar">
     <h3 style="margin:4px 0 8px 0;font-size:14px;">Select Panel</h3>
@@ -476,42 +433,19 @@
     </div>
 
     <div class="panel panel-active" id="panel1" draggable="true" data-video="video1">
-      <div class="panel-media" id="media_video1">
-        <video id="video1" class="stream-player" autoplay muted playsinline></video>
-      </div>
-      <div class="panel-media" id="media_web1" style="display:none;">
-        <iframe is="x-frame-bypass" id="web1" class="panel-iframe" allowfullscreen></iframe>
-      </div>
+      <video id="video1" class="stream-player" autoplay muted playsinline></video>
       <div class="panel-label" id="label_video1">Panel 1</div>
     </div>
-
     <div class="panel" id="panel2" draggable="true" data-video="video2">
-      <div class="panel-media" id="media_video2">
-        <video id="video2" class="stream-player" autoplay muted playsinline></video>
-      </div>
-      <div class="panel-media" id="media_web2" style="display:none;">
-        <iframe is="x-frame-bypass" id="web2" class="panel-iframe" allowfullscreen></iframe>
-      </div>
+      <video id="video2" class="stream-player" autoplay muted playsinline></video>
       <div class="panel-label" id="label_video2">Panel 2</div>
     </div>
-
     <div class="panel" id="panel3" draggable="true" data-video="video3">
-      <div class="panel-media" id="media_video3">
-        <video id="video3" class="stream-player" autoplay muted playsinline></video>
-      </div>
-      <div class="panel-media" id="media_web3" style="display:none;">
-        <iframe is="x-frame-bypass" id="web3" class="panel-iframe" allowfullscreen></iframe>
-      </div>
+      <video id="video3" class="stream-player" autoplay muted playsinline></video>
       <div class="panel-label" id="label_video3">Panel 3</div>
     </div>
-
     <div class="panel" id="panel4" draggable="true" data-video="video4">
-      <div class="panel-media" id="media_video4">
-        <video id="video4" class="stream-player" autoplay muted playsinline></video>
-      </div>
-      <div class="panel-media" id="media_web4" style="display:none;">
-        <iframe is="x-frame-bypass" id="web4" class="panel-iframe" allowfullscreen></iframe>
-      </div>
+      <video id="video4" class="stream-player" autoplay muted playsinline></video>
       <div class="panel-label" id="label_video4">Panel 4</div>
     </div>
   </div>
@@ -531,21 +465,21 @@ const CHANNEL_GROUPS = {
       channel: "NBC",
       logo: "https://img.zuzz.tv/assets/channels/leP0I9zVkdBVQUefXv9iSgvK7vMtNTqlRwNZGST7ED8aHoMcgA.png",
       links: [
-        "https://fl1.moveonjoy.com/NBC/index.m3u8"
+        "http://fl1.moveonjoy.com/NBC/index.m3u8"
       ]
     },
     {
       channel: "CBS",
       logo: "https://img.zuzz.tv/assets/channels/CBS.png",
       links: [
-        "https://fl1.moveonjoy.com/CBS/index.m3u8"
+        "http://fl1.moveonjoy.com/CBS/index.m3u8"
       ]
     },
     {
       channel: "ABC",
       logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/ABC-2021-LOGO.svg/2560px-ABC-2021-LOGO.svg.png",
       links: [
-        "https://fl1.moveonjoy.com/ABC/index.m3u8"
+        "http://fl1.moveonjoy.com/ABC/index.m3u8"
       ]
     },
     {
@@ -573,7 +507,7 @@ const CHANNEL_GROUPS = {
       channel: "USA",
       logo: "https://img.zuzz.tv/assets/channels/j6IDLeDYF3QFLoNE2vHQEu7SZcvNFt0QnHmApJqckwuHlcOJhx.png",
       links: [
-        "https://fl31.moveonjoy.com/USA_NETWORK/index.m3u8"
+        "http://fl31.moveonjoy.com/USA_NETWORK/index.m3u8"
       ]
     }
   ],
@@ -607,22 +541,8 @@ const CHANNEL_GROUPS = {
       ]
     },
     {
-      channel: "Seven Two",
-      logo: "https://i.mjh.nz/.images/auto-7two-bri-701123.png",
-      links: [
-        "https://i.mjh.nz/.r/7two-bri.m3u8"
-      ]
-    },
-    {
-      channel: "10",
-      logo: "https://10.com.au/ip/s3/2025/06/25/f4cdf0245b4ef0d5cd74929c1217a881-1384576.png",
-      links: [
-        "https://i.mjh.nz/.r/10-qld.m3u8"
-      ]
-    },
-    {
       channel: "Racing.com",
-      logo: "https://static.wikia.nocookie.net/logopedia/images/3/3e/RACING.COM_logo_2016.svg/revision/latest?cb=20181117180142",
+      logo: "https://static.wikia.nocookie.net/logopedia/images/3/3e/RACING.COM_logo_2016.svg",
       links: [
         "https://i.mjh.nz/.r/racing-fast.m3u8"
       ]
@@ -633,18 +553,14 @@ const CHANNEL_GROUPS = {
       channel: "ESPN (US)",
       logo: "https://img.zuzz.tv/assets/channels/0n7d6FQkfkqe7k80zzsD3tZx6vEJuuGahPbzjCGSnk2uSK7SO2.png",
       links: [
-        "http://41.205.93.154/ESPN/index.m3u8",
-        "https://serv10g.zuzzplayer.xyz/hls/espn/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTIvNS8yMDI1IDU6NTM6MjYgQU0maGFzaF92YWx1ZT1pYXhydmlQVUFTL2NCV0Q1dFhCMDRnPT0mdmFsaWRtaW51dGVzPTI4MA==",
-        "https://serv10g.zuzzplayer.xyz/hls/espn/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTIvOC8yMDI1IDEwOjI0OjA1IEFNJmhhc2hfdmFsdWU9ZUxFalp0ZWZNOFFDNDNMaVA2R3dKUT09JnZhbGlkbWludXRlcz0yODA="
+        "%%ESPN_URL%%"
       ]
     },
     {
       channel: "ESPN2 (US)",
       logo: "https://img.zuzz.tv/assets/channels/DbRwK42zSLyeCsWYxv1SIQcvBsHzhhEsUr8pW1pPmDoKVQtcEt.png",
       links: [
-        "https://serv10g.zuzzplayer.xyz/hls/espn2/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTEvMjEvMjAyNSAxOjI0OjA0IFBNJmhhc2hfdmFsdWU9YzZrdG91NlBMUXpwaFJFcmJNMHlpZz09JnZhbGlkbWludXRlcz0yODA=",
-        "https://serv10g.zuzzplayer.xyz/hls/espn2/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTIvNS8yMDI1IDU6NTQ6NDUgQU0maGFzaF92YWx1ZT1CcWI0eVZoL1V0RmpPSEt3bWtHN1V3PT0mdmFsaWRtaW51dGVzPTI4MA==",
-        "https://serv10g.zuzzplayer.xyz/hls/espn2/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTIvOC8yMDI1IDEwOjI0OjQ5IEFNJmhhc2hfdmFsdWU9Z3pJemJhMGRUbkhMbUxKdmkxbHRBUT09JnZhbGlkbWludXRlcz0yODA="
+        "%%ESPN2_URL%%"
       ]
     },
     {
@@ -732,13 +648,6 @@ const CHANNEL_GROUPS = {
       ]
     },
     {
-      channel: "Golf Channel",
-      logo: "https://img.zuzz.tv/assets/channels/uwGHnFtPLYvdhmk5x9BXEzc3orQD2HC9YQAtho6g7IjTddX27K.png",
-      links: [
-        "https://fl1.moveonjoy.com/GOLF/index.m3u8"
-      ]
-    },
-    {
       channel: "SNY",
       logo: "https://upload.wikimedia.org/wikipedia/commons/1/1c/SNY_logo.svg",
       links: [
@@ -746,10 +655,10 @@ const CHANNEL_GROUPS = {
       ]
     },
     {
-      channel: "MSG HD",
+      channel: "MSG Sportsnet",
       logo: "https://img.zuzz.tv/assets/channels/uTIfEcLMqxJjXaVZaGqCLBWaJCN6ML7saYVypSeCMAoVqNoNUe.png",
       links: [
-        "https://fl2.moveonjoy.com/MSG/index.m3u8"
+        "%%MSG_SN_URL%%"
       ]
     },
     {
@@ -760,32 +669,21 @@ const CHANNEL_GROUPS = {
       ]
     },
     {
-      channel: "Fanduel Detroit",
-      logo: "https://press.fanduel.com/_next/image?url=https%3A%2F%2Fcdn.sanity.io%2Fimages%2Fpbwem9y5%2Ffanduel_common_production%2F08bd6bfd645437fd56a3edbdac4657c23312af6a-4882x4868.png&w=640&q=100",
-      links: [
-        "https://v4.thetvapp.to/hls/fanduel-sports-network-detroit-hd/tracks-v1a1/mono.m3u8?token=ZoSngoGO3_z9NCbYah_hDQ&expires=1765122546&user_id=MTEwLjMyLjIyMy4yNDg="
-      ]
-    },
-    {
       channel: "NBC Sports Boston",
       logo: "https://img.zuzz.tv/assets/channels/b6MjsvM3qfQY4CZV1LVJWwFt1mVVoj3iX7gmPTH7MiP8rFWFAk.png",
       links: [
-        "https://serv10g2.zuzzplayer.xyz/hls/nbc-boston/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTEvMTYvMjAyNSA4OjIzOjMzIEFNJmhhc2hfdmFsdWU9ZEV1bHdvMExyWXhRUFM5NVN6RHdqdz09JnZhbGlkbWludXRlcz0yODA=",
-        "https://serv10g2.zuzzplayer.xyz/hls/nbc-boston/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTEvMTUvMjAyNSAxMjozODowMyBBTSZoYXNoX3ZhbHVlPUNDaW9GbWVBQUp0b3EzNTlkOFdVa3c9PSZ2YWxpZG1pbnV0ZXM9Mjgw",
-        "https://serv10g2.zuzzplayer.xyz/hls/nbc-boston/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTIvOC8yMDI1IDEwOjIwOjQwIEFNJmhhc2hfdmFsdWU9YlB3MlBIOE0rT01sN0FWRTFxcFJRUT09JnZhbGlkbWludXRlcz0yODA="
+        "%%NBC_BOSTON_URL%%"
       ]
     },
     {
       channel: "NESN",
       logo: "https://img.zuzz.tv/assets/channels/pNcr1AgqdNw9MAjXJeWzOgxwUx3XJ7CdLZs2BGThVwk3LR4C4a.png",
       links: [
-        "https://serv10g2.zuzzplayer.xyz/hls/nesn12/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTEvMTYvMjAyNSA4OjIzOjMzIEFNJmhhc2hfdmFsdWU9ZEV1bHdvMExyWXhRUFM5NVN6RHdqdz09JnZhbGlkbWludXRlcz0yODA=",
-        "https://serv10g2.zuzzplayer.xyz/hls/nesn12/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTEvMTUvMjAyNSAxMjozODowMyBBTSZoYXNoX3ZhbHVlPUNDaW9GbWVBQUp0b3EzNTlkOFdVa3c9PSZ2YWxpZG1pbnV0ZXM9Mjgw",
-        "https://serv10g2.zuzzplayer.xyz/hls/nesn12/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTIvOC8yMDI1IDEwOjIyOjExIEFNJmhhc2hfdmFsdWU9MWl2a09wcHRtd3FhbURCN2d4b2FDUT09JnZhbGlkbWludXRlcz0yODA="
+        "%%NESN_URL%%"
       ]
     },
     {
-      channel: "Fanduel Racing",
+      channel: "Fanduel Sports Network",
       logo: "https://press.fanduel.com/_next/image?url=https%3A%2F%2Fcdn.sanity.io%2Fimages%2Fpbwem9y5%2Ffanduel_common_production%2F08bd6bfd645437fd56a3edbdac4657c23312af6a-4882x4868.png&w=640&q=100",
       links: [
         "https://fl31.moveonjoy.com/PAC_12/index.m3u8"
@@ -804,158 +702,86 @@ const CHANNEL_GROUPS = {
       channel: "Sportsnet West",
       logo: "https://img.zuzz.tv/assets/channels/3uG0nL2Wp3ey1ixpKnTZppIZPoukSILXBB0WX9HyuACmyK9Z3A.png",
       links: [
-        "https://serv10g2.zuzzplayer.xyz/hls/snwest/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTIvMy8yMDI1IDk6MTg6MDMgQU0maGFzaF92YWx1ZT1sa2IrREUrUkRGVkVaOUl6WEFFOUlnPT0mdmFsaWRtaW51dGVzPTI4MA==",
-        "https://serv10g.zuzzplayer.xyz/hls/snwest/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTIvNS8yMDI1IDU6Mjg6MDQgQU0maGFzaF92YWx1ZT1LS2EvQXp1d1J6aFpYamJsQUlwZkNRPT0mdmFsaWRtaW51dGVzPTI4MA==",
-        "https://serv10g2.zuzzplayer.xyz/hls/snwest/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTIvMy8yMDI1IDExOjA3OjUwIFBNJmhhc2hfdmFsdWU9ZzFqZ1QyblZ1RnJNelRBTk9FekFGZz09JnZhbGlkbWludXRlcz0yODA="
+        "%%SNWEST_URL%%"
       ]
     },
     {
       channel: "Sportsnet Ontario",
       logo: "https://img.zuzz.tv/assets/channels/3uG0nL2Wp3ey1ixpKnTZppIZPoukSILXBB0WX9HyuACmyK9Z3A.png",
       links: [
-        "https://serv10g2.zuzzplayer.xyz/hls/snontario/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTEvMTYvMjAyNSA4OjIzOjMzIEFNJmhhc2hfdmFsdWU9ZEV1bHdvMExyWXhRUFM5NVN6RHdqdz09JnZhbGlkbWludXRlcz0yODA=",
-        "https://serv10g2.zuzzplayer.xyz/hls/snontario/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTEvMjEvMjAyNSAxMjo1NjozOCBQTSZoYXNoX3ZhbHVlPUN2QURyZVFHblphSnluUGVMbG5oMXc9PSZ2YWxpZG1pbnV0ZXM9Mjgw",
-        "https://serv10g.zuzzplayer.xyz/hls/snontario/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTEvMjIvMjAyNSA3OjA1OjA1IEFNJmhhc2hfdmFsdWU9QW95M29XVmN6N3VWYzEweFJSOXZwZz09JnZhbGlkbWludXRlcz0yODA=",
-        "https://serv10g2.zuzzplayer.xyz/hls/snontario/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTEvMjIvMjAyNSAxOjU3OjU2IEFNJmhhc2hfdmFsdWU9cTQ0c1NzNTh4U2loNmNuWVBVbVFOQT09JnZhbGlkbWludXRlcz0yODA=",
-        "https://serv10g.zuzzplayer.xyz/hls/snontario/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTEvMjYvMjAyNSAyOjMyOjUxIEFNJmhhc2hfdmFsdWU9SlluakpobkNBYWR0WHJEQ1g3SFFMZz09JnZhbGlkbWludXRlcz0yODA=",
-        "https://serv10g.zuzzplayer.xyz/hls/snontario/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTEvMjgvMjAyNSAzOjAwOjExIEFNJmhhc2hfdmFsdWU9aUliQmh5eTVSclNVWjMvNjdSVVdFQT09JnZhbGlkbWludXRlcz0yODA=",
-        "https://serv10g2.zuzzplayer.xyz/hls/snontario/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTEvMjkvMjAyNSA4OjE1OjQ3IEFNJmhhc2hfdmFsdWU9bldYNGJLMkdIVWxyVUtoRENNLzRKUT09JnZhbGlkbWludXRlcz0yODA=",
-        "https://serv10g2.zuzzplayer.xyz/hls/snontario/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTIvMS8yMDI1IDY6MjQ6MDYgQU0maGFzaF92YWx1ZT1wdFc3b2lQeFlaYXB6aTEwVnVpNVZnPT0mdmFsaWRtaW51dGVzPTI4MA==",
-        "https://serv10g.zuzzplayer.xyz/hls/snontario/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTIvMy8yMDI1IDEwOjE0OjI4IEFNJmhhc2hfdmFsdWU9TS94NVFuMHkwSm1QSDJwT2VlY3dIUT09JnZhbGlkbWludXRlcz0yODA=",
-        "https://serv10g.zuzzplayer.xyz/hls/snontario/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTIvNS8yMDI1IDU6Mjk6NTQgQU0maGFzaF92YWx1ZT1hUDhTQzEvWTVtUy8wVGg2cDVuanh3PT0mdmFsaWRtaW51dGVzPTI4MA==",
-        "https://serv10g.zuzzplayer.xyz/hls/snontario/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTIvMy8yMDI1IDExOjA2OjAyIFBNJmhhc2hfdmFsdWU9VThWa0FyR0Rwd0VYb2p2SmVIRDR5UT09JnZhbGlkbWludXRlcz0yODA=",
-        "https://a1xs.vip/6000011"
+        "%%SNONTARIO_URL%%"
       ]
     }
   ],
-  "NBA": [
+  "Featured Events": [
+    {
+      channel: "UFC 323",
+      logo: "https://upload.wikimedia.org/wikipedia/en/0/0d/UFC_logo.svg",
+      links: [
+        "https://fl7.moveonjoy.com/BIG_TEN_NETWORK/index.m3u8"
+      ]
+    },
     {
       channel: "League Pass 1",
       logo: "https://img.zuzz.tv/assets/channels/nQWkxr73TBBJoByDoKwirX90t4efemvAVwYF15PM9Xt7uD8pk2.png",
       links: [
-        "https://serv10g.zuzzplayer.xyz/hls/nba1/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTEvMTMvMjAyNSAxMjo0MDozOSBQTSZoYXNoX3ZhbHVlPUtBeFVkR0llQ2lyeHhvVnlRZmRzS3c9PSZ2YWxpZG1pbnV0ZXM9Mjgw",
-        "https://serv10g2.zuzzplayer.xyz/hls/nba1/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTEvMTYvMjAyNSA4OjIzOjMzIEFNJmhhc2hfdmFsdWU9ZEV1bHdvMExyWXhRUFM5NVN6RHdqdz09JnZhbGlkbWludXRlcz0yODA=",
-        "https://serv10g.zuzzplayer.xyz/hls/nba1/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTIvNC8yMDI1IDEyOjA4OjAyIEFNJmhhc2hfdmFsdWU9UzBLQnVtNUdIa3FSRjFXaldQLzd1QT09JnZhbGlkbWludXRlcz0yODA=",
-        "https://serv10g2.zuzzplayer.xyz/hls/nba1/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTIvNy8yMDI1IDEyOjA0OjEzIEFNJmhhc2hfdmFsdWU9eUpBOHdpVWV6NWphaGtKYSt4dGt4Zz09JnZhbGlkbWludXRlcz0yODA="
+        "%%LEAGUE_PASS_1_URL%%"
       ]
     },
     {
       channel: "League Pass 2",
       logo: "https://img.zuzz.tv/assets/channels/nQWkxr73TBBJoByDoKwirX90t4efemvAVwYF15PM9Xt7uD8pk2.png",
       links: [
-        "https://serv10g.zuzzplayer.xyz/hls/nba2/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTEvMTMvMjAyNSAxMjo0MDozOSBQTSZoYXNoX3ZhbHVlPUtBeFVkR0llQ2lyeHhvVnlRZmRzS3c9PSZ2YWxpZG1pbnV0ZXM9Mjgw",
-        "https://serv10g2.zuzzplayer.xyz/hls/nba2/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTEvMTYvMjAyNSA4OjIzOjMzIEFNJmhhc2hfdmFsdWU9ZEV1bHdvMExyWXhRUFM5NVN6RHdqdz09JnZhbGlkbWludXRlcz0yODA=",
-        "https://serv10g.zuzzplayer.xyz/hls/nba2/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTIvNC8yMDI1IDEyOjExOjI1IEFNJmhhc2hfdmFsdWU9VmgzWC9tRk0wRWs0L1ZPQmpJSDJxdz09JnZhbGlkbWludXRlcz0yODA=",
-        "https://serv10g2.zuzzplayer.xyz/hls/nba2/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTIvNy8yMDI1IDEyOjA1OjIwIEFNJmhhc2hfdmFsdWU9Y01FKzRMZ3hHb2pqTHFxamkwZUs5Zz09JnZhbGlkbWludXRlcz0yODA=",
-        "https://serv10g2.zuzzplayer.xyz/hls/nba2/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTIvNy8yMDI1IDEyOjA1OjIwIEFNJmhhc2hfdmFsdWU9Y01FKzRMZ3hHb2pqTHFxamkwZUs5Zz09JnZhbGlkbWludXRlcz0yODA="
+        "%%LEAGUE_PASS_2_URL%%"
       ]
     },
     {
       channel: "League Pass 3",
       logo: "https://img.zuzz.tv/assets/channels/nQWkxr73TBBJoByDoKwirX90t4efemvAVwYF15PM9Xt7uD8pk2.png",
       links: [
-        "https://serv10g.zuzzplayer.xyz/hls/nba3/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTEvMTMvMjAyNSAxMjo0MDozOSBQTSZoYXNoX3ZhbHVlPUtBeFVkR0llQ2lyeHhvVnlRZmRzS3c9PSZ2YWxpZG1pbnV0ZXM9Mjgw",
-        "https://serv10g2.zuzzplayer.xyz/hls/nba3/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTEvMTYvMjAyNSA4OjIzOjMzIEFNJmhhc2hfdmFsdWU9ZEV1bHdvMExyWXhRUFM5NVN6RHdqdz09JnZhbGlkbWludXRlcz0yODA=",
-        "https://serv10g.zuzzplayer.xyz/hls/nba3/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTIvNC8yMDI1IDEyOjEzOjA2IEFNJmhhc2hfdmFsdWU9WlN3RlI5ODZUMW80YWNsMXB4b2RSdz09JnZhbGlkbWludXRlcz0yODA=",
-        "https://serv10g2.zuzzplayer.xyz/hls/nba3/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTIvOC8yMDI1IDEyOjE1OjEzIEFNJmhhc2hfdmFsdWU9WXNvczZhTEUvU3cxeXNzMEcwaUpwdz09JnZhbGlkbWludXRlcz0yODA="
+        "%%LEAGUE_PASS_3_URL%%"
       ]
     },
     {
       channel: "League Pass 4",
       logo: "https://img.zuzz.tv/assets/channels/nQWkxr73TBBJoByDoKwirX90t4efemvAVwYF15PM9Xt7uD8pk2.png",
       links: [
-        "https://serv10g.zuzzplayer.xyz/hls/nba4/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTEvMTMvMjAyNSAxMjo0MDozOSBQTSZoYXNoX3ZhbHVlPUtBeFVkR0llQ2lyeHhvVnlRZmRzS3c9PSZ2YWxpZG1pbnV0ZXM9Mjgw",
-        "https://serv10g2.zuzzplayer.xyz/hls/nba4/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTEvMTYvMjAyNSA4OjIzOjMzIEFNJmhhc2hfdmFsdWU9ZEV1bHdvMExyWXhRUFM5NVN6RHdqdz09JnZhbGlkbWludXRlcz0yODA=",
-        "https://serv10g2.zuzzplayer.xyz/hls/nba4/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTIvNy8yMDI1IDEyOjA2OjE5IEFNJmhhc2hfdmFsdWU9cGdKL2lRTGhaeU1xWUZuaWluRFdhdz09JnZhbGlkbWludXRlcz0yODA="
+        "%%LEAGUE_PASS_4_URL%%"
       ]
     },
     {
       channel: "League Pass 5",
       logo: "https://img.zuzz.tv/assets/channels/nQWkxr73TBBJoByDoKwirX90t4efemvAVwYF15PM9Xt7uD8pk2.png",
       links: [
-        "https://serv10g.zuzzplayer.xyz/hls/nba5/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTEvMTMvMjAyNSAxMjo0MDozOSBQTSZoYXNoX3ZhbHVlPUtBeFVkR0llQ2lyeHhvVnlRZmRzS3c9PSZ2YWxpZG1pbnV0ZXM9Mjgw",
-        "https://serv10g2.zuzzplayer.xyz/hls/nba5/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTEvMTYvMjAyNSA4OjIzOjMzIEFNJmhhc2hfdmFsdWU9ZEV1bHdvMExyWXhRUFM5NVN6RHdqdz09JnZhbGlkbWludXRlcz0yODA=",
-        "https://serv10g2.zuzzplayer.xyz/hls/nba3/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTIvNy8yMDI1IDEyOjA3OjM0IEFNJmhhc2hfdmFsdWU9b04veHBaUkU2SUNuNjg2Y0dLRnQ0dz09JnZhbGlkbWludXRlcz0yODA=",
-        "https://serv10g.zuzzplayer.xyz/hls/nba5/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTIvOC8yMDI1IDEyOjE3OjUxIEFNJmhhc2hfdmFsdWU9NWE5aXhZbGdKVTFsY1EraVVjdG9lUT09JnZhbGlkbWludXRlcz0yODA="
+        "%%LEAGUE_PASS_5_URL%%"
       ]
     },
     {
       channel: "League Pass 6",
       logo: "https://img.zuzz.tv/assets/channels/nQWkxr73TBBJoByDoKwirX90t4efemvAVwYF15PM9Xt7uD8pk2.png",
       links: [
-        "https://serv10g.zuzzplayer.xyz/hls/nba6/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTEvMTMvMjAyNSAxMjo0MDozOSBQTSZoYXNoX3ZhbHVlPUtBeFVkR0llQ2lyeHhvVnlRZmRzS3c9PSZ2YWxpZG1pbnV0ZXM9Mjgw",
-        "https://serv10g2.zuzzplayer.xyz/hls/nba6/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTEvMTYvMjAyNSA4OjIzOjMzIEFNJmhhc2hfdmFsdWU9ZEV1bHdvMExyWXhRUFM5NVN6RHdqdz09JnZhbGlkbWludXRlcz0yODA=",
-        "https://serv10g2.zuzzplayer.xyz/hls/nba6/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTIvNy8yMDI1IDEyOjA4OjI3IEFNJmhhc2hfdmFsdWU9cHFoazhrcVp6aWNmM0wyUGZBRU1mZz09JnZhbGlkbWludXRlcz0yODA=",
-        
+        "%%LEAGUE_PASS_6_URL%%"
       ]
     },
     {
       channel: "League Pass 7",
       logo: "https://img.zuzz.tv/assets/channels/nQWkxr73TBBJoByDoKwirX90t4efemvAVwYF15PM9Xt7uD8pk2.png",
       links: [
-        "https://serv10g.zuzzplayer.xyz/hls/nba7/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTEvMTMvMjAyNSAxMjo0MDozOSBQTSZoYXNoX3ZhbHVlPUtBeFVkR0llQ2lyeHhvVnlRZmRzS3c9PSZ2YWxpZG1pbnV0ZXM9Mjgw",
-        "https://serv10g2.zuzzplayer.xyz/hls/nba7/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTEvMTYvMjAyNSA4OjIzOjMzIEFNJmhhc2hfdmFsdWU9ZEV1bHdvMExyWXhRUFM5NVN6RHdqdz09JnZhbGlkbWludXRlcz0yODA=",
-        "https://serv10g2.zuzzplayer.xyz/hls/nba7/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTIvNy8yMDI1IDEyOjEwOjU1IEFNJmhhc2hfdmFsdWU9TVhYWDZPeDVxcy9Gc0tuazMzZkxFZz09JnZhbGlkbWludXRlcz0yODA="
+        "%%LEAGUE_PASS_7_URL%%"
       ]
     },
     {
       channel: "League Pass 8",
       logo: "https://img.zuzz.tv/assets/channels/nQWkxr73TBBJoByDoKwirX90t4efemvAVwYF15PM9Xt7uD8pk2.png",
       links: [
-        "https://serv10g.zuzzplayer.xyz/hls/nba8/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTEvMTMvMjAyNSAxMjo0MDozOSBQTSZoYXNoX3ZhbHVlPUtBeFVkR0llQ2lyeHhvVnlRZmRzS3c9PSZ2YWxpZG1pbnV0ZXM9Mjgw",
-        "https://serv10g2.zuzzplayer.xyz/hls/nba8/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTEvMTYvMjAyNSA4OjIzOjMzIEFNJmhhc2hfdmFsdWU9ZEV1bHdvMExyWXhRUFM5NVN6RHdqdz09JnZhbGlkbWludXRlcz0yODA="
+        "%%LEAGUE_PASS_8_URL%%"
       ]
     }
   ]
 };
 
-/* External Aus Streaming apps – open in separate windows snapped to panel */
-const EXTERNAL_APPS = [
-  {
-    name: "Kayo Sports",
-    url: "https://kayosports.com.au/",
-    key: "Kayo",
-    logo: "https://media.kayosports.com.au/content/dam/nc/fc/sm/kyo/prl/media-centre/logos/KayoSportsLogoMono.png"
-  },
-  {
-    name: "Stan Sport",
-    url: "https://play.stan.com.au/sport",
-    key: "StanSport",
-    logo: "https://www.stan.com.au/favicon.ico"
-  },
-  {
-    name: "Paramount+",
-    url: "https://www.paramountplus.com/collections/sports-hub-au/",
-    key: "ParamountPlus",
-    logo: "https://www.paramountplus.com/favicon.ico"
-  },
-  {
-    name: "Disney+ (ESPN)",
-    url: "https://www.disneyplus.com/en-gb/browse/espn",
-    key: "DisneyPlusESPN",
-    logo: "https://www.disneyplus.com/favicon.ico"
-  }
-];
-
 let selectedVideoId = "video1";
 let audioSourceVideoId = "video1";
-let popupRefs = {};
-
-/* mode: "video" or "web" per panel */
-const modeByVideoId = {
-  video1: "video",
-  video2: "video",
-  video3: "video",
-  video4: "video"
-};
-
-/* remember web URLs per panel */
-const webUrlByVideoId = {
-  video1: null,
-  video2: null,
-  video3: null,
-  video4: null
-};
 
 const hlsInstances = { video1: null, video2: null, video3: null, video4: null };
 const linksByVideoId = { video1: [], video2: [], video3: [], video4: [] };
@@ -995,6 +821,7 @@ function initLogin() {
   const btn = document.getElementById("login-button");
   const error = document.getElementById("login-error");
 
+  // Auto-bypass login if "stay logged in" was previously enabled
   const remembered = localStorage.getItem(REMEMBER_KEY) === "1";
   if (remembered) {
     loginScreen.style.display = "none";
@@ -1033,25 +860,6 @@ function initLogin() {
   userInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter") doLogin();
   });
-}
-
-/* ---------- MEDIA MODES ---------- */
-
-function setPanelMode(videoId, mode) {
-  modeByVideoId[videoId] = mode;
-
-  const num = videoId.replace("video", "");
-  const videoContainer = document.getElementById("media_" + videoId);
-  const webContainer = document.getElementById("media_web" + num);
-
-  if (mode === "web") {
-    if (videoContainer) videoContainer.style.display = "none";
-    if (webContainer) webContainer.style.display = "block";
-    destroyHls(videoId);
-  } else {
-    if (videoContainer) videoContainer.style.display = "block";
-    if (webContainer) webContainer.style.display = "none";
-  }
 }
 
 /* ---------- APP LOGIC ---------- */
@@ -1121,9 +929,6 @@ function handleStreamError(videoId) {
 function actuallyLoadCurrent(videoId) {
   const video = document.getElementById(videoId);
   if (!video) return;
-
-  setPanelMode(videoId, "video");
-
   const links = linksByVideoId[videoId] || [];
   const idx = currentLinkIndex[videoId] || 0;
   if (!links.length || idx >= links.length) return;
@@ -1154,10 +959,9 @@ function actuallyLoadCurrent(videoId) {
   updateAudioState();
 }
 
-/* Load an HLS channel into the selected panel (video mode) */
 function loadChannelIntoSelected(groupName, channelObj) {
   const videoId = selectedVideoId;
-  linksByVideoId[videoId] = channelObj.links.slice();
+  linksByVideoId[videoId] = channelObj.links.slice().filter(Boolean); // drop empty strings
   currentLinkIndex[videoId] = 0;
 
   const video = document.getElementById(videoId);
@@ -1170,27 +974,7 @@ function loadChannelIntoSelected(groupName, channelObj) {
     label.textContent = channelObj.channel;
   }
 
-  webUrlByVideoId[videoId] = null;
-  setPanelMode(videoId, "video");
   actuallyLoadCurrent(videoId);
-}
-
-/* Load a WEBSITE into the selected panel (web mode) */
-function loadWebsiteIntoSelected(url, labelName) {
-  const videoId = selectedVideoId;
-  const num = videoId.replace("video", "");
-  const iframe = document.getElementById("web" + num);
-  if (!iframe) return;
-
-  webUrlByVideoId[videoId] = url;
-  iframe.src = url;
-
-  const label = document.getElementById("label_" + videoId);
-  if (label) {
-    label.textContent = labelName;
-  }
-
-  setPanelMode(videoId, "web");
 }
 
 function layoutPanels() {
@@ -1297,78 +1081,6 @@ function buildGroupsUI() {
   }
 }
 
-/* Build the “Aus Streaming” external apps group (collapsed by default, uses popups) */
-function buildExternalAppsUI() {
-  const container = document.getElementById("channelGroups");
-  if (!container) return;
-
-  const groupDiv = document.createElement("div");
-  groupDiv.className = "group";
-
-  const header = document.createElement("div");
-  header.className = "group-header";
-  const titleSpan = document.createElement("span");
-  titleSpan.textContent = "Aus Streaming";
-  const chev = document.createElement("span");
-  chev.className = "chevron";
-  chev.textContent = "▶";
-  header.appendChild(titleSpan);
-  header.appendChild(chev);
-
-  const channelsDiv = document.createElement("div");
-  channelsDiv.className = "group-channels";
-  channelsDiv.style.display = "none";
-
-  EXTERNAL_APPS.forEach(app => {
-    const btn = document.createElement("button");
-    btn.className = "channel-card";
-
-    if (app.logo) {
-      const logo = document.createElement("img");
-      logo.className = "channel-logo";
-      logo.src = app.logo;
-      logo.alt = app.name;
-      btn.appendChild(logo);
-    }
-
-    const meta = document.createElement("div");
-    meta.className = "channel-meta";
-
-    const nameSpan = document.createElement("span");
-    nameSpan.className = "channel-name";
-    nameSpan.textContent = app.name;
-    meta.appendChild(nameSpan);
-
-    const tagSpan = document.createElement("span");
-    tagSpan.className = "channel-tag";
-    tagSpan.textContent = "Streaming app";
-    meta.appendChild(tagSpan);
-
-    btn.appendChild(meta);
-
-    const badge = document.createElement("span");
-    badge.className = "channel-live-badge";
-    badge.textContent = "Open";
-    btn.appendChild(badge);
-
-    // Use popup with auto-snap to panel and periodic focus
-    btn.onclick = () => openExternalForSelectedPanel(app.url, app.key, app.name);
-
-    channelsDiv.appendChild(btn);
-  });
-
-  header.onclick = () => {
-    const isVisible = channelsDiv.style.display === "block";
-    channelsDiv.style.display = isVisible ? "none" : "block";
-    chev.textContent = isVisible ? "▶" : "▼";
-  };
-
-  groupDiv.appendChild(header);
-  groupDiv.appendChild(channelsDiv);
-  container.appendChild(groupDiv);
-}
-
-/* Custom URL stream (video mode) */
 function handleCustomUrl() {
   const url = prompt("Enter stream URL (.m3u8 or other):");
   if (!url) return;
@@ -1386,82 +1098,7 @@ function handleCustomUrl() {
   if (label) {
     label.textContent = "Custom";
   }
-  webUrlByVideoId[videoId] = null;
-  setPanelMode(videoId, "video");
   actuallyLoadCurrent(videoId);
-}
-
-/* Popup helper with auto-snap to panel AND periodic focus */
-function openExternalForSelectedPanel(url, key, displayName) {
-  const panelSelector = '.panel[data-video="' + selectedVideoId + '"]';
-  const panel = document.querySelector(panelSelector);
-
-  // If no panel, just open a normal tab
-  if (!panel) {
-    window.open(url, "_blank");
-    return;
-  }
-
-  const rect = panel.getBoundingClientRect();
-  const left = Math.floor(window.screenX + rect.left);
-  const top = Math.floor(window.screenY + rect.top);
-  const width = Math.floor(rect.width);
-  const height = Math.floor(rect.height);
-
-  const features = [
-    "left=" + left,
-    "top=" + top,
-    "width=" + width,
-    "height=" + height,
-    "resizable=yes",
-    "scrollbars=yes"
-  ].join(",");
-
-  const windowName = "Sportsbar_" + key + "_" + selectedVideoId;
-  const win = window.open(url, windowName, features);
-
-  if (!win) {
-    alert("Your browser blocked the window. Please allow pop-ups for this site.");
-    return;
-  }
-
-  // Update panel label to show what's there
-  const label = document.getElementById("label_" + selectedVideoId);
-  if (label && displayName) {
-    label.textContent = displayName;
-  }
-
-  popupRefs[windowName] = {
-    win,
-    panelSelector
-  };
-
-  // Periodically re-align AND focus the popup to keep it on top
-  const interval = setInterval(() => {
-    const ref = popupRefs[windowName];
-    if (!ref || ref.win.closed) {
-      clearInterval(interval);
-      delete popupRefs[windowName];
-      return;
-    }
-
-    const p = document.querySelector(ref.panelSelector);
-    if (!p) return;
-
-    const r = p.getBoundingClientRect();
-    const l = Math.floor(window.screenX + r.left);
-    const t = Math.floor(window.screenY + r.top);
-    const w = Math.floor(r.width);
-    const h = Math.floor(r.height);
-
-    try {
-      ref.win.moveTo(l, t);
-      ref.win.resizeTo(w, h);
-      ref.win.focus();
-    } catch (e) {
-      // Browsers may restrict moveTo/resizeTo/focus; ignore errors
-    }
-  }, 1000);
 }
 
 function enterPageFullscreen() {
@@ -1568,72 +1205,21 @@ function swapPanels(panelIdA, panelIdB) {
   currentLinkIndex[videoIdA] = currentLinkIndex[videoIdB];
   currentLinkIndex[videoIdB] = tmpIdx;
 
-  const tmpMode = modeByVideoId[videoIdA];
-  modeByVideoId[videoIdA] = modeByVideoId[videoIdB];
-  modeByVideoId[videoIdB] = tmpMode;
-
-  const tmpWebUrl = webUrlByVideoId[videoIdA];
-  webUrlByVideoId[videoIdA] = webUrlByVideoId[videoIdB];
-  webUrlByVideoId[videoIdB] = tmpWebUrl;
-
-  [videoIdA, videoIdB].forEach((videoId) => {
-    const mode = modeByVideoId[videoId];
-    if (mode === "web") {
-      const num = videoId.replace("video", "");
-      const iframe = document.getElementById("web" + num);
-      if (iframe) {
-        iframe.src = webUrlByVideoId[videoId] || "about:blank";
-      }
-      setPanelMode(videoId, "web");
-    } else {
-      if (linksByVideoId[videoId] && linksByVideoId[videoId].length) {
-        actuallyLoadCurrent(videoId);
-      } else {
-        setPanelMode(videoId, "video");
-      }
-    }
-  });
+  if (linksByVideoId[videoIdA] && linksByVideoId[videoIdA].length) {
+    actuallyLoadCurrent(videoIdA);
+  }
+  if (linksByVideoId[videoIdB] && linksByVideoId[videoIdB].length) {
+    actuallyLoadCurrent(videoIdB);
+  }
 }
 
 window.addEventListener("load", () => {
   initLogin();
   buildGroupsUI();
-  buildExternalAppsUI();
   initDragAndDrop();
   updateAudioState();
   updatePanelSelectionUI();
-  showTopControls();
-
-  document.querySelectorAll(".panel").forEach(panel => {
-    const videoId = panel.dataset.video;
-    if (!videoId) return;
-    const controls = document.createElement("div");
-    controls.className = "panel-controls";
-
-    const reloadBtn = document.createElement("button");
-    reloadBtn.className = "panel-reload-btn";
-    reloadBtn.title = "Reload";
-    reloadBtn.textContent = "⟳";
-
-    reloadBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const mode = modeByVideoId[videoId] || "video";
-      if (mode === "web") {
-        const num = videoId.replace("video", "");
-        const iframe = document.getElementById("web" + num);
-        if (iframe && iframe.src) {
-          iframe.src = iframe.src;
-        } else if (webUrlByVideoId[videoId]) {
-          iframe.src = webUrlByVideoId[videoId];
-        }
-      } else {
-        actuallyLoadCurrent(videoId);
-      }
-    });
-
-    controls.appendChild(reloadBtn);
-    panel.appendChild(controls);
-  });
+  showTopControls(); // show at start, then auto-hide
 
   const screenEl = document.getElementById("screen");
   if (screenEl) {
@@ -1681,7 +1267,7 @@ window.addEventListener("load", () => {
   document.querySelectorAll(".panelButton").forEach(btn => {
     btn.addEventListener("click", () => {
       const vid = btn.getAttribute("data-video");
-      if (vid) setPanel(vid);
+      setPanel(vid);
     });
   });
 
@@ -1707,4 +1293,3 @@ window.addEventListener("resize", () => {
 
 </body>
 </html>
-
