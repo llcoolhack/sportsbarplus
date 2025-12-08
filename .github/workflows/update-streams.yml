@@ -1,0 +1,57 @@
+name: Update stream URLs
+
+on:
+  schedule:
+    # Runs 6 times per day, ~every 4h40m (280 minutes)
+    # NOTE: These times are in UTC
+    - cron: '0 0 * * *'    # 00:00 UTC
+    - cron: '40 4 * * *'   # 04:40 UTC
+    - cron: '20 9 * * *'   # 09:20 UTC
+    - cron: '0 14 * * *'   # 14:00 UTC
+    - cron: '40 18 * * *'  # 18:40 UTC
+    - cron: '20 23 * * *'  # 23:20 UTC
+  # Manual trigger if you want to run it on demand
+  workflow_dispatch: {}
+
+jobs:
+  update-streams:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+        with:
+          # Needed so we can push back to the same branch
+          persist-credentials: true
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: |
+          if [ -f package-lock.json ] || [ -f npm-shrinkwrap.json ]; then
+            npm ci
+          else
+            npm install
+          fi
+
+      - name: Run fetcher (update sportsplus_serv_urls.json + index.html)
+        run: node fetch-nba-today.mjs
+        env:
+          ZUZZ_USERNAME: ${{ secrets.ZUZZ_USERNAME }}
+          ZUZZ_PASSWORD: ${{ secrets.ZUZZ_PASSWORD }}
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          if [ -n "$(git status --porcelain)" ]; then
+            git add index.html sportsplus_serv_urls.json
+            git commit -m "Update stream URLs [skip ci]"
+            git push
+          else
+            echo "No changes to commit"
+          fi
