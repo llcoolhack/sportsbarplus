@@ -2,8 +2,8 @@ import puppeteer from 'puppeteer';
 import fs from 'fs';
 
 // ---------- CONFIG: credentials from env (with optional local fallback) ----------
-const USERNAME = process.env.ZUZZ_USERNAME || 'YOUR_EMAIL_HERE';
-const PASSWORD = process.env.ZUZZ_PASSWORD || 'YOUR_PASSWORD_HERE';
+const USERNAME = process.env.ZUZZ_USERNAME || 'lochiehackett@hotmail.com';
+const PASSWORD = process.env.ZUZZ_PASSWORD || 'Villanova1!';
 
 // Each channel has:
 //  - slug:  for ?channel=slug on zuzz.tv
