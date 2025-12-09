@@ -1,4 +1,16 @@
 {
-  "channels": {},
-  "nbaGames": []
+  "generatedAt": "2025-12-09T00:55:52.389Z",
+  "channels": {
+    "Sportsnet Ontario": "https://serv10g.zuzzplayer.xyz/hls/snontario/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTIvOS8yMDI1IDEyOjUyOjQ3IEFNJmhhc2hfdmFsdWU9R0tvR1p6Wnh0c1RFemRLWHRHOW9nQT09JnZhbGlkbWludXRlcz0yODA=",
+    "Sportsnet West": "https://serv10g.zuzzplayer.xyz/hls/snwest/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTIvOS8yMDI1IDEyOjUyOjUxIEFNJmhhc2hfdmFsdWU9VFllQ3I0ZWk2MURIaVJkRmE5M3A5QT09JnZhbGlkbWludXRlcz0yODA=",
+    "NBC Sports Boston": "https://serv10g.zuzzplayer.xyz/hls/nbc-boston/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTIvOS8yMDI1IDEyOjUzOjIzIEFNJmhhc2hfdmFsdWU9d2w3eU12Z0w5S1VxQlJvVTV0SU1oZz09JnZhbGlkbWludXRlcz0yODA=",
+    "MSG Sportsnet": "https://serv10g.zuzzplayer.xyz/hls/msg-sn/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTIvOS8yMDI1IDEyOjUzOjI5IEFNJmhhc2hfdmFsdWU9MTJ1TTViTGpLTVdRa3EvQzhPWldvQT09JnZhbGlkbWludXRlcz0yODA=",
+    "ESPN": "https://serv10g2.zuzzplayer.xyz/hls/espn/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTIvOS8yMDI1IDEyOjUzOjM0IEFNJmhhc2hfdmFsdWU9S2g0dDU2Uk5ZQjlIQWJGVU9GTW5XQT09JnZhbGlkbWludXRlcz0yODA=",
+    "ESPN2": "https://serv10g.zuzzplayer.xyz/hls/espn2/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTIvOS8yMDI1IDEyOjUzOjQwIEFNJmhhc2hfdmFsdWU9ckpRL0NFQTBLR0ZiZHV3eVlLUmVDUT09JnZhbGlkbWludXRlcz0yODA="
+  },
+  "nbaLeaguePass": {
+    "NBA League Pass 1": "https://serv10g2.zuzzplayer.xyz/hls/nba1/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTIvOS8yMDI1IDEyOjUzOjU2IEFNJmhhc2hfdmFsdWU9am1XV3R0b3pjeW80UFRxVjdvcmV4Zz09JnZhbGlkbWludXRlcz0yODA=",
+    "NBA League Pass 2": "https://serv10g2.zuzzplayer.xyz/hls/nba2/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTIvOS8yMDI1IDEyOjU0OjA0IEFNJmhhc2hfdmFsdWU9Rm5oOTdvbVFCTllKNm1IaUlmcHRsdz09JnZhbGlkbWludXRlcz0yODA=",
+    "NBA League Pass 3": "https://serv10g2.zuzzplayer.xyz/hls/nba3/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9MTIvOS8yMDI1IDEyOjU0OjExIEFNJmhhc2hfdmFsdWU9eWdlQXdFOHVJZndYbGdhK3NubWtZQT09JnZhbGlkbWludXRlcz0yODA="
+  }
 }
